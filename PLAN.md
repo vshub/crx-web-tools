@@ -574,13 +574,15 @@ export const DEFAULT_PRESETS = [
     userAgent:
       'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
   },
-  { id: 'd1920', name: 'Desktop 1920', icon: 'desktop', windowWidth: 1920, windowHeight: null, emulate: false },
-  { id: 'd1440', name: 'Desktop 1440', icon: 'desktop', windowWidth: 1440, windowHeight: null, emulate: false },
-  { id: 'd1280', name: 'Desktop 1280', icon: 'desktop', windowWidth: 1280, windowHeight: null, emulate: false },
+  { id: 'd1920', name: '1920 × 1080', icon: 'desktop', windowWidth: 1920, windowHeight: 1080, emulate: false },
+  { id: 'd1440', name: '1440 × 900', icon: 'desktop', windowWidth: 1440, windowHeight: 900, emulate: false },
+  { id: 'd1280', name: '1280 × 800', icon: 'desktop', windowWidth: 1280, windowHeight: 800, emulate: false },
 ];
 ```
 
-Desktop presets: `chrome.windows.update(windowId, { width, height? })` only. Do not attach debugger.
+Default Handy (popup list): `d1440`, `d1920`. Emulate / Split are deferred in the popup UI.
+
+Desktop presets: `chrome.windows.update` with **width and height** so the page viewport matches. Do not attach debugger.
 
 Mobile/tablet row in the popup: **two actions** if `emulate: true`:
 

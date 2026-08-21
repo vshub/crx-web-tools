@@ -14,12 +14,12 @@ Not published to the Chrome Web Store — load it unpacked from this repo.
 
 By default, shots go to **clipboard and Downloads**. Change that under Settings.
 
+Optional **Include screenshot info** (popup checkbox, or full options in Settings) burns viewport size / host onto capture PNGs after the shot.
+
 ### Frames
-- **Emulate** — CDP device emulation on the current tab (badge shows `ON`). Reloads the page so sites can serve a mobile layout.
-- **Window presets** — resize so the **page viewport** matches the size (compensates for vertical tabs / side panel chrome)
+- **Window presets** — resize so the **page viewport** matches width × height (compensates for vertical tabs / side panel chrome). Defaults: **1440×900** and **1920×1080**; enable more under Settings → Handy.
 - **Viewport size** — live HUD showing `innerWidth × innerHeight`, DPR, and screen size (like [whatismyviewport.com](https://whatismyviewport.com/)). Appears after a preset resize; toggle anytime from the popup. Click the size to copy; × or Esc to close.
-- **Split window** — open a second window with the same URL beside the current one
-- Per-preset **Emulate** on mobile/tablet rows
+- Emulate / Split window — available in code but hidden from the popup for now
 
 ### Measure
 - Hover any element to see `width × height`
@@ -113,10 +113,10 @@ Open **Settings** from the popup footer (or right-click the extension → Option
 - **Delay seconds** — delayed capture countdown
 - **Max full-page height** — safety cap (default 12000)
 - **Save mode** — clipboard / download / both
-- **Screenshot stamp** — optional badge burned into capture PNGs (after the shot): viewport size (`1440×900`), hostname, and/or origin+path (no query). Corner + fields in Settings. Also applied to QA `viewport.png` (not pin crops).
+- **Screenshot stamp** — optional badge on capture PNGs. Toggle **Include screenshot info** in the popup; corner/fields in Settings.
 - **QA report folder** — default `WebTools-reports`
 - **Copy markdown on export** — also put `report.md` text on the clipboard
-- **Handy** checkboxes — which device presets appear in the popup
+- **Handy** checkboxes — which device presets appear in the popup (defaults: 1440×900, 1920×1080)
 
 ## Limits
 

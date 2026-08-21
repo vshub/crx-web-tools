@@ -6,8 +6,9 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <header>
+    <header class="brand">
       <h1>WebTools</h1>
+      <span id="version" class="version" aria-label="Version"></span>
     </header>
 
     <p id="reason" class="reason" hidden></p>
@@ -20,24 +21,29 @@
         <button type="button" id="capture_fullpage">Full page</button>
         <button type="button" id="capture_region">Region</button>
       </div>
+      <label class="check">
+        <input id="stampEnabled" type="checkbox" />
+        Include screenshot info
+      </label>
     </section>
 
     <section>
       <h2>Frames</h2>
+      <!-- Deferred: Emulate + Split window
       <button type="button" id="toggle_emulate" class="wide" aria-pressed="false">Emulate iPhone</button>
       <button type="button" id="open_split_window" class="wide">Split window</button>
+      -->
       <button type="button" id="toggle_viewport_hud" class="wide">Viewport size</button>
       <div id="presets" class="presets" role="list"></div>
+      <p class="hint">Add more sizes in Settings.</p>
     </section>
 
     <section>
-      <h2>Measure</h2>
-      <button type="button" id="start_measure" class="wide">Measure</button>
-    </section>
-
-    <section>
-      <h2>QA</h2>
-      <button type="button" id="start_qa" class="wide">QA notes</button>
+      <h2>Tools</h2>
+      <div class="grid">
+        <button type="button" id="start_measure">Measure</button>
+        <button type="button" id="start_qa">QA notes</button>
+      </div>
     </section>
 
     <footer>

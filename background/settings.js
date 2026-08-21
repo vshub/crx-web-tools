@@ -1,9 +1,41 @@
 import { DEFAULT_SETTINGS, STAMP_POSITIONS } from './files.js';
-import { DEFAULT_PRESETS } from './device.js';
+import { DEFAULT_HANDY_PRESET_IDS, DEFAULT_PRESETS } from './device.js';
 import { clamp } from './constants.js';
 
 export function defaultHandyPresetIds(presets = DEFAULT_PRESETS) {
-  return (Array.isArray(presets) ? presets : DEFAULT_PRESETS).map((p) => p.id).filter(Boolean);
+  const list = Array.isArray(presets) ? presets : DEFAULT_PRESETS;
+  const preferred = DEFAULT_HANDY_PRESET_IDS.filter((id) => list.some((p) => p.id === id));
+  if (preferred.length) return preferred;
+  return list.filter((p) => !p.emulate).map((p) => p.id).filter(Boolean);
+}
+
+const DESKTOP_SIZE_PATCH = {
+  d1440: { windowWidth: 1440, windowHeight: 900, name: '1440 × 900' },
+  d1920: { windowWidth: 1920, windowHeight: 1080, name: '1920 × 1080' },
+  d1280: { windowWidth: 1280, windowHeight: 800, name: '1280 × 800' },
+};
+
+function patchDesktopPresetSizes(presets) {
+  if (!Array.isArray(presets) || !presets.length) return null;
+  let changed = false;
+  const next = presets.map((preset) => {
+    const patch = DESKTOP_SIZE_PATCH[preset?.id];
+    if (!patch) return preset;
+    // Don't overwrite a custom height the user set in Settings.
+    if (preset.windowHeight != null && preset.windowHeight !== patch.windowHeight) {
+      return preset;
+    }
+    if (
+      preset.windowWidth === patch.windowWidth &&
+      preset.windowHeight === patch.windowHeight &&
+      preset.name === patch.name
+    ) {
+      return preset;
+    }
+    changed = true;
+    return { ...preset, ...patch };
+  });
+  return changed ? next : null;
 }
 
 export async function seedStorage() {
@@ -27,6 +59,9 @@ export async function seedStorage() {
 
   if (!Array.isArray(local.windowPresets) || local.windowPresets.length === 0) {
     updates.windowPresets = DEFAULT_PRESETS;
+  } else {
+    const patched = patchDesktopPresetSizes(local.windowPresets);
+    if (patched) updates.windowPresets = patched;
   }
 
   if (!local.lastEmulatePresetId) {
@@ -36,9 +71,25 @@ export async function seedStorage() {
   if (!Array.isArray(local.handyPresetIds)) {
     const presets =
       Array.isArray(local.windowPresets) && local.windowPresets.length
-        ? local.windowPresets
+        ? updates.windowPresets || local.windowPresets
         : updates.windowPresets || DEFAULT_PRESETS;
     updates.handyPresetIds = defaultHandyPresetIds(presets);
+  } else {
+    // Older installs defaulted Handy to every preset → trim to the short desktop set once.
+    const allIds = (Array.isArray(local.windowPresets) && local.windowPresets.length
+      ? local.windowPresets
+      : DEFAULT_PRESETS
+    ).map((p) => p.id);
+    const handy = local.handyPresetIds.filter((id) => typeof id === 'string');
+    const looksLikeLegacyAll =
+      allIds.length > 2 &&
+      handy.length >= allIds.length &&
+      allIds.every((id) => handy.includes(id));
+    if (looksLikeLegacyAll) {
+      updates.handyPresetIds = defaultHandyPresetIds(
+        updates.windowPresets || local.windowPresets || DEFAULT_PRESETS,
+      );
+    }
   }
 
   if (Object.keys(updates).length) {

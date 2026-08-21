@@ -1,6 +1,6 @@
 import { isRestrictedUrl } from '../background/constants.js';
 import { DEFAULT_PRESETS } from '../background/device.js';
-import { stateKey } from '../background/session.js';
+import { defaultHandyPresetIds, getSettings, saveSettings } from '../background/settings.js';
 
 function sizeLabel(preset) {
   if (preset.windowHeight == null) return String(preset.windowWidth);
@@ -32,11 +32,21 @@ function el(tag, attrs = {}, children = []) {
   return node;
 }
 
+function onClick(id, handler) {
+  const node = document.getElementById(id);
+  if (node) node.addEventListener('click', handler);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+  const versionEl = document.getElementById('version');
+  if (versionEl) {
+    const ver = chrome.runtime.getManifest().version;
+    versionEl.textContent = `v${ver}`;
+  }
+
   const tab = await getActiveTab();
   const restricted = !tab || isRestrictedUrl(tab.url);
   const reason = document.getElementById('reason');
-  const emulateBtn = document.getElementById('toggle_emulate');
   const pageActions = [
     'capture_viewport',
     'capture_viewport_delayed',
@@ -52,29 +62,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     reason.hidden = false;
     reason.textContent = 'This page can’t be captured or emulated.';
     for (const id of pageActions) {
-      document.getElementById(id).disabled = true;
+      const node = document.getElementById(id);
+      if (node) node.disabled = true;
     }
+    const stamp = document.getElementById('stampEnabled');
+    if (stamp) stamp.disabled = true;
   }
 
-  const [{ windowPresets }, { lastEmulatePresetId }, { handyPresetIds }, session] = await Promise.all([
+  const settings = await getSettings();
+  const stampInput = document.getElementById('stampEnabled');
+  if (stampInput) {
+    stampInput.checked = Boolean(settings.stampEnabled);
+    stampInput.addEventListener('change', async () => {
+      try {
+        await saveSettings({ stampEnabled: stampInput.checked });
+      } catch (_) {
+        stampInput.checked = !stampInput.checked;
+      }
+    });
+  }
+
+  const [{ windowPresets }, { handyPresetIds }] = await Promise.all([
     chrome.storage.local.get('windowPresets'),
-    chrome.storage.local.get('lastEmulatePresetId'),
     chrome.storage.local.get('handyPresetIds'),
-    tab?.id != null ? chrome.storage.session.get(stateKey(tab.id)) : {},
   ]);
 
   const presets = Array.isArray(windowPresets) && windowPresets.length ? windowPresets : DEFAULT_PRESETS;
   const handy = Array.isArray(handyPresetIds)
     ? new Set(handyPresetIds)
-    : new Set(presets.map((p) => p.id));
+    : new Set(defaultHandyPresetIds(presets));
   const visiblePresets = presets.filter((p) => handy.has(p.id));
-  const dbg = tab?.id != null ? session[stateKey(tab.id)] : null;
-  const emulating = Boolean(dbg?.emulate);
-  const currentPresetId = dbg?.emulatePresetId || lastEmulatePresetId || 'iphone-15';
-  const currentPreset = presets.find((p) => p.id === currentPresetId && p.emulate) || presets.find((p) => p.emulate);
 
-  emulateBtn.setAttribute('aria-pressed', emulating ? 'true' : 'false');
-  emulateBtn.textContent = `Emulate ${currentPreset?.name || 'iPhone'}`;
+  // Deferred: emulate button state (requires #toggle_emulate in DOM)
+  // const [{ lastEmulatePresetId }, session] = await Promise.all([...]);
+  // emulateBtn.setAttribute('aria-pressed', ...);
 
   const list = document.getElementById('presets');
   for (const preset of visiblePresets) {
@@ -91,53 +112,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     const row = el('div', { className: 'preset', role: 'listitem' }, [main]);
 
-    if (preset.emulate) {
-      const emu = el('button', {
-        type: 'button',
-        className: 'preset-emulate',
-        text: 'Emulate',
-        disabled: restricted,
-      });
-      emu.addEventListener('click', () => {
-        send('toggle_emulate', { presetId: preset.id, tabId: tab?.id });
-      });
-      row.appendChild(emu);
-    }
+    // Deferred: per-preset Emulate button
+    // if (preset.emulate) { ... }
+
     list.appendChild(row);
   }
 
-  document.getElementById('capture_viewport').addEventListener('click', () => {
-    send('capture_viewport', { tabId: tab?.id });
-  });
-  document.getElementById('capture_viewport_delayed').addEventListener('click', () => {
-    send('capture_viewport_delayed', { tabId: tab?.id });
-  });
-  document.getElementById('capture_fullpage').addEventListener('click', () => {
-    send('capture_fullpage', { tabId: tab?.id });
-  });
-  document.getElementById('capture_region').addEventListener('click', () => {
-    send('capture_region', { tabId: tab?.id });
-  });
-  emulateBtn.addEventListener('click', () => {
-    send('toggle_emulate', { tabId: tab?.id });
-  });
-  document.getElementById('open_split_window').addEventListener('click', () => {
-    send('open_split_window', {
-      url: tab?.url,
-      sourceWindowId: tab?.windowId,
-      tabId: tab?.id,
-    });
-  });
-  document.getElementById('toggle_viewport_hud').addEventListener('click', () => {
-    send('toggle_viewport_hud', { tabId: tab?.id });
-  });
-  document.getElementById('start_measure').addEventListener('click', () => {
-    send('start_measure', { tabId: tab?.id });
-  });
-  document.getElementById('start_qa').addEventListener('click', () => {
-    send('start_qa', { tabId: tab?.id });
-  });
-  document.getElementById('settings').addEventListener('click', () => {
+  onClick('capture_viewport', () => send('capture_viewport', { tabId: tab?.id }));
+  onClick('capture_viewport_delayed', () => send('capture_viewport_delayed', { tabId: tab?.id }));
+  onClick('capture_fullpage', () => send('capture_fullpage', { tabId: tab?.id }));
+  onClick('capture_region', () => send('capture_region', { tabId: tab?.id }));
+  // Deferred:
+  // onClick('toggle_emulate', () => send('toggle_emulate', { tabId: tab?.id }));
+  // onClick('open_split_window', () => send('open_split_window', { ... }));
+  onClick('toggle_viewport_hud', () => send('toggle_viewport_hud', { tabId: tab?.id }));
+  onClick('start_measure', () => send('start_measure', { tabId: tab?.id }));
+  onClick('start_qa', () => send('start_qa', { tabId: tab?.id }));
+  onClick('settings', () => {
     chrome.runtime.openOptionsPage();
     window.close();
   });
