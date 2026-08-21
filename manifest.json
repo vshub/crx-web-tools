@@ -57,6 +57,9 @@
     },
     "start_measure": {
       "description": "Start measure overlay"
+    },
+    "start_qa": {
+      "description": "Start QA notes overlay"
     }
   }
 }

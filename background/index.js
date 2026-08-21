@@ -8,6 +8,13 @@ import {
 import { writeClipboard } from './clipboard.js';
 import { KNOWN_ACTIONS } from './constants.js';
 import { openSplitWindow, resizeWindow, toggleEmulate } from './device.js';
+import {
+  clearQaState,
+  copyQaMarkdown,
+  exportQaReport,
+  getQaState,
+  syncQaPins,
+} from './report.js';
 import { restoreBadge, registerSessionListeners } from './session.js';
 import { seedStorage } from './settings.js';
 
@@ -29,6 +36,7 @@ async function ensureContextMenus() {
     chrome.contextMenus.create({ id: 'sep_1', type: 'separator', contexts });
     chrome.contextMenus.create({ id: 'toggle_emulate', title: 'Toggle Emulate', contexts });
     chrome.contextMenus.create({ id: 'start_measure', title: 'Measure', contexts });
+    chrome.contextMenus.create({ id: 'start_qa', title: 'QA notes', contexts });
   } catch (_) {}
 }
 
@@ -62,6 +70,22 @@ export async function dispatch(msg, sender) {
     return { ok: true };
   }
 
+  if (action === 'qa_get') {
+    const tab = await resolveTab(msg, sender);
+    return getQaState(tab.id);
+  }
+
+  if (action === 'qa_sync') {
+    const tab = await resolveTab(msg, sender);
+    return syncQaPins(tab.id, msg.pins);
+  }
+
+  if (action === 'qa_clear') {
+    const tab = await resolveTab(msg, sender);
+    await clearQaState(tab.id);
+    return { ok: true };
+  }
+
   const tab = await resolveTab(msg, sender);
 
   switch (action) {
@@ -85,6 +109,12 @@ export async function dispatch(msg, sender) {
       return { ok: true };
     case 'start_measure':
       return injectOverlay(tab, 'measure');
+    case 'start_qa':
+      return injectOverlay(tab, 'qa');
+    case 'qa_export':
+      return exportQaReport(tab);
+    case 'qa_copy_md':
+      return copyQaMarkdown(tab);
     default:
       console.warn('Unknown action', action);
       return { ok: false, error: 'unknown_action' };
@@ -126,4 +156,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   const id = info.menuItemId;
   if (id === 'sep_1') return;
   runCommand(id, {}, tab);
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  clearQaState(tabId).catch(() => {});
 });

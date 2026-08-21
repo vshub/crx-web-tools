@@ -18,8 +18,9 @@ Personal unpacked Chrome extension (Manifest V3). **This file is the only source
 | Output | Copy PNG to clipboard **and** download (setting can change this) |
 | Frames | CDP device emulate on the current tab (badge `ON`), window-size presets, split mobile window |
 | Measure | Page overlay: hover shows `w × h`; two clicks show gap in px; Esc exits |
+| QA notes | Live-page element pins with notes + severity; export Markdown report pack + screenshots |
 
-**Out of v1:** grid overlay, color picker, a11y outline, export page logs, click-element capture (region replaces it), video/GIF, annotation, tests suite, store packaging.
+**Out of v1:** grid overlay, color picker, a11y outline, export page logs, click-element capture (region replaces it), video/GIF, draw-on-PNG annotation, Jira/GitHub APIs, tests suite, store packaging.
 
 ---
 
@@ -108,6 +109,7 @@ WebTools/
     files.js
     settings.js
     constants.js
+    report.js
   offscreen/
     clipboard.html
     clipboard.js
@@ -213,6 +215,12 @@ All runtime messages are `{ action: string, ...payload }`. Service worker handle
 | `resize_window` | popup | `{ width, height }` | `chrome.windows.update`; `height` may be `null` (width only) |
 | `open_split_window` | popup | `{ url, sourceWindowId }` | shrink source, open sibling with same URL |
 | `start_measure` | popup / command | — | inject overlay in `measure` mode |
+| `start_qa` | popup / command / menu | — | inject overlay in `qa` mode |
+| `qa_get` | overlay | — | return `{ pins }` from `chrome.storage.session` key `qa:${tabId}` |
+| `qa_sync` | overlay | `{ pins }` | persist pins for the tab |
+| `qa_export` | overlay | — | hide overlay, capture viewport + pin crops, download report pack, optional copy MD |
+| `qa_copy_md` | overlay | — | copy Markdown report text to clipboard |
+| `qa_clear` | overlay / popup | — | clear session pins for the tab |
 | `copy_text` | overlay | `{ text }` | write string to clipboard via offscreen |
 
 Popup always: query `{ active: true, currentWindow: true }`, send message, `window.close()` (except you may keep popup open — closing is fine; SW continues).
@@ -747,6 +755,7 @@ No orphan trailing separator.
 12. `chrome://extensions` as active tab: capture/emulate/measure refuse cleanly.
 13. Unknown message does not take a full-page screenshot.
 14. Kill the service worker from `chrome://serviceworker-internals` while emulate is ON; click Emulate again — it **disables**, does not enable twice.
+15. QA notes: pin two elements with notes; Export writes `report.md` + PNGs under `WebTools-reports/`; Copy MD puts markdown on the clipboard; overlay is not in the PNGs.
 
 ---
 
@@ -764,7 +773,38 @@ background/index.js
         ├── capture.js
         │       ├── files.js (sanitize + download)
         │       └── clipboard.js → offscreen document
-        └── scripting → content/overlay.js (measure | region)
+        ├── report.js (QA markdown pack)
+        └── scripting → content/overlay.js (measure | region | qa)
 ```
 
 If emulate and capture disagree about device metrics, **emulate wins after the shot**. Capture is a guest.
+
+---
+
+## 21. QA notes (v1.1)
+
+Live-page element comments for staging/UAT UX QA. No hosted sharing — export a local report pack.
+
+### Flow
+
+1. Popup **QA notes** (or command / action menu) injects overlay mode `qa`.
+2. Hover highlights the element under the cursor; click opens a note panel (note text + severity: blocker / bug / nit).
+3. Numbered pins stay on the page. Click a badge to edit/delete. Toolbar: Export, Copy MD, Clear, Done.
+4. Esc exits the overlay but **keeps** pins in `chrome.storage.session` (`qa:${tabId}`) until Clear or tab close.
+5. **Export**: hide overlay → viewport PNG → CDP clip per pin → download folder:
+
+```text
+WebTools-reports/{stamp}-{domain}-{title}/
+  report.md
+  viewport.png
+  01-{label}.png
+  …
+```
+
+`report.md` uses relative image links. Setting `copyMdOnExport` (default true) also copies the markdown text.
+
+### Rules
+
+- Same capture hard rules: no overlay pixels in shots; emulate stays attached; restricted URLs refuse.
+- Selector helper: unique `#id` → `data-testid` → short `nth-of-type` path.
+- Vanilla only — do not vendor marker.js / Fabric / React QA extensions.

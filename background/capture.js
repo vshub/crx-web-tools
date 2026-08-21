@@ -156,24 +156,65 @@ async function captureViaCdp(tabId, signal, extra = {}) {
 export async function captureViewport(tab, typeStr = TYPE.viewport) {
   await guardRestricted(tab);
   return withCaptureLock(tab, async (signal) => {
-    let dataUrl;
-    const emulating = await isEmulating(tab.id);
-    if (emulating) {
-      dataUrl = await captureViaCdp(tab.id, signal);
-    } else {
-      try {
-        if (tab.windowId == null) throw new Error('no windowId');
-        dataUrl = await withAbort(
-          signal,
-          chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' }),
-        );
-      } catch (err) {
-        if (signal?.aborted) throw err;
-        dataUrl = await captureViaCdp(tab.id, signal);
-      }
-    }
+    const dataUrl = await captureViewportRaw(tab, signal);
     if (signal.aborted) throw new Error('aborted');
     return deliver(dataUrl, tab, typeStr, 'png');
+  });
+}
+
+async function captureViewportRaw(tab, signal) {
+  let dataUrl;
+  const emulating = await isEmulating(tab.id);
+  if (emulating) {
+    dataUrl = await captureViaCdp(tab.id, signal);
+  } else {
+    try {
+      if (tab.windowId == null) throw new Error('no windowId');
+      dataUrl = await withAbort(
+        signal,
+        chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' }),
+      );
+    } catch (err) {
+      if (signal?.aborted) throw err;
+      dataUrl = await captureViaCdp(tab.id, signal);
+    }
+  }
+  return dataUrl;
+}
+
+/** Viewport PNG data URL without download/clipboard delivery (for QA packs). */
+export async function captureViewportDataUrl(tab) {
+  await guardRestricted(tab);
+  return withCaptureLock(tab, async (signal) => captureViewportRaw(tab, signal));
+}
+
+/** Region/clip PNG data URL without download/clipboard delivery (for QA pin crops). */
+export async function captureClipDataUrl(tab, coords) {
+  await guardRestricted(tab);
+  return withCaptureLock(tab, async (signal) => {
+    await acquire(tab.id, 'capture');
+    try {
+      await withAbort(signal, sendCommand(tab.id, 'Page.enable'));
+      const dpr = Number(coords?.devicePixelRatio) || 1;
+      const clip = {
+        x: Math.round(Number(coords?.x) || 0),
+        y: Math.round(Number(coords?.y) || 0),
+        width: Math.max(1, Math.round(Number(coords?.width) || 0)),
+        height: Math.max(1, Math.round(Number(coords?.height) || 0)),
+        scale: dpr > 1 ? dpr : 1,
+      };
+      const result = await withAbort(
+        signal,
+        sendCommand(tab.id, 'Page.captureScreenshot', {
+          format: 'png',
+          captureBeyondViewport: true,
+          clip,
+        }),
+      );
+      return toDataUrl(result);
+    } finally {
+      await release(tab.id, 'capture');
+    }
   });
 }
 

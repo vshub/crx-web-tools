@@ -2,8 +2,17 @@ import { DEFAULT_SETTINGS } from './files.js';
 import { DEFAULT_PRESETS } from './device.js';
 import { clamp } from './constants.js';
 
+export function defaultHandyPresetIds(presets = DEFAULT_PRESETS) {
+  return (Array.isArray(presets) ? presets : DEFAULT_PRESETS).map((p) => p.id).filter(Boolean);
+}
+
 export async function seedStorage() {
-  const local = await chrome.storage.local.get(['settings', 'windowPresets', 'lastEmulatePresetId']);
+  const local = await chrome.storage.local.get([
+    'settings',
+    'windowPresets',
+    'lastEmulatePresetId',
+    'handyPresetIds',
+  ]);
   const updates = {};
 
   if (!local.settings || typeof local.settings !== 'object') {
@@ -22,6 +31,14 @@ export async function seedStorage() {
 
   if (!local.lastEmulatePresetId) {
     updates.lastEmulatePresetId = 'iphone-15';
+  }
+
+  if (!Array.isArray(local.handyPresetIds)) {
+    const presets =
+      Array.isArray(local.windowPresets) && local.windowPresets.length
+        ? local.windowPresets
+        : updates.windowPresets || DEFAULT_PRESETS;
+    updates.handyPresetIds = defaultHandyPresetIds(presets);
   }
 
   if (Object.keys(updates).length) {
@@ -43,6 +60,12 @@ export async function getSettings() {
   if (typeof merged.downloadFolder !== 'string') {
     merged.downloadFolder = DEFAULT_SETTINGS.downloadFolder;
   }
+  if (typeof merged.reportFolder !== 'string') {
+    merged.reportFolder = DEFAULT_SETTINGS.reportFolder;
+  }
+  if (typeof merged.copyMdOnExport !== 'boolean') {
+    merged.copyMdOnExport = DEFAULT_SETTINGS.copyMdOnExport;
+  }
   return merged;
 }
 
@@ -55,5 +78,19 @@ export async function saveSettings(partial) {
     throw new Error('invalid save mode');
   }
   await chrome.storage.local.set({ settings: next });
+  return next;
+}
+
+export async function getHandyPresetIds(presets) {
+  const { handyPresetIds } = await chrome.storage.local.get('handyPresetIds');
+  if (!Array.isArray(handyPresetIds)) {
+    return defaultHandyPresetIds(presets);
+  }
+  return handyPresetIds.filter((id) => typeof id === 'string');
+}
+
+export async function setHandyPresetIds(ids) {
+  const next = Array.isArray(ids) ? ids.filter((id) => typeof id === 'string') : [];
+  await chrome.storage.local.set({ handyPresetIds: next });
   return next;
 }

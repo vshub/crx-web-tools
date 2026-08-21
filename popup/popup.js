@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     'capture_region',
     'toggle_emulate',
     'start_measure',
+    'start_qa',
   ];
 
   if (restricted) {
@@ -54,13 +55,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  const [{ windowPresets }, { lastEmulatePresetId }, session] = await Promise.all([
+  const [{ windowPresets }, { lastEmulatePresetId }, { handyPresetIds }, session] = await Promise.all([
     chrome.storage.local.get('windowPresets'),
     chrome.storage.local.get('lastEmulatePresetId'),
+    chrome.storage.local.get('handyPresetIds'),
     tab?.id != null ? chrome.storage.session.get(stateKey(tab.id)) : {},
   ]);
 
   const presets = Array.isArray(windowPresets) && windowPresets.length ? windowPresets : DEFAULT_PRESETS;
+  const handy = Array.isArray(handyPresetIds)
+    ? new Set(handyPresetIds)
+    : new Set(presets.map((p) => p.id));
+  const visiblePresets = presets.filter((p) => handy.has(p.id));
   const dbg = tab?.id != null ? session[stateKey(tab.id)] : null;
   const emulating = Boolean(dbg?.emulate);
   const currentPresetId = dbg?.emulatePresetId || lastEmulatePresetId || 'iphone-15';
@@ -70,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   emulateBtn.textContent = `Emulate ${currentPreset?.name || 'iPhone'}`;
 
   const list = document.getElementById('presets');
-  for (const preset of presets) {
+  for (const preset of visiblePresets) {
     const icon = el('span', { className: `ico ico-${preset.icon || 'desktop'}`, 'aria-hidden': 'true' });
     const name = el('span', { className: 'preset-name', text: preset.name || 'Preset' });
     const meta = el('span', { className: 'meta', text: sizeLabel(preset) });
@@ -123,6 +129,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   document.getElementById('start_measure').addEventListener('click', () => {
     send('start_measure', { tabId: tab?.id });
+  });
+  document.getElementById('start_qa').addEventListener('click', () => {
+    send('start_qa', { tabId: tab?.id });
   });
   document.getElementById('settings').addEventListener('click', () => {
     chrome.runtime.openOptionsPage();

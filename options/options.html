@@ -21,7 +21,17 @@
             Filename pattern
             <input id="filenamePattern" type="text" autocomplete="off" />
           </label>
-          <p class="help">Tokens: {type} {datetime} {title} {url} {domain}</p>
+          <div class="help vars-help">
+            <p>Available variables: {datetime}, {title}, {url}, {domain}, {subdomain}, {type}</p>
+            <ul>
+              <li><code>{datetime}</code>: Current date and time</li>
+              <li><code>{title}</code>: Page title</li>
+              <li><code>{url}</code>: Full hostname (e.g., www.example.com)</li>
+              <li><code>{domain}</code>: Base domain without TLD (e.g., “example” from “www.example.com”)</li>
+              <li><code>{subdomain}</code>: Subdomains with base domain (e.g., “www_example” from “www.example.com”)</li>
+              <li><code>{type}</code>: VP viewport, DL delayed, FS full page, RG region</li>
+            </ul>
+          </div>
           <label>
             Delay seconds
             <input id="delaySeconds" type="number" min="0" max="15" step="1" />
@@ -38,12 +48,21 @@
               <option value="both">both</option>
             </select>
           </label>
+          <label>
+            QA report folder
+            <input id="reportFolder" type="text" autocomplete="off" />
+          </label>
+          <label class="check">
+            <input id="copyMdOnExport" type="checkbox" />
+            Copy markdown to clipboard when exporting a QA report
+          </label>
           <button type="submit">Save</button>
         </form>
       </section>
 
       <section>
         <h2>Device presets</h2>
+        <p class="help section-help">Check <strong>Handy</strong> to show a size in the popup Frames list.</p>
         <p id="preset-status" class="status" hidden></p>
         <div id="preset-list" class="preset-list"></div>
         <div class="row">

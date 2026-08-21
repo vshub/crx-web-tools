@@ -1,5 +1,11 @@
 import { DEFAULT_PRESETS } from '../background/device.js';
-import { getSettings, saveSettings } from '../background/settings.js';
+import {
+  defaultHandyPresetIds,
+  getHandyPresetIds,
+  getSettings,
+  saveSettings,
+  setHandyPresetIds,
+} from '../background/settings.js';
 
 const ICONS = new Set(['desktop', 'laptop', 'tablet', 'mobile']);
 
@@ -39,6 +45,8 @@ function fillSaveForm(settings) {
   document.getElementById('delaySeconds').value = String(settings.delaySeconds);
   document.getElementById('maxHeight').value = String(settings.maxHeight);
   document.getElementById('saveMode').value = settings.saveMode;
+  document.getElementById('reportFolder').value = settings.reportFolder || 'WebTools-reports';
+  document.getElementById('copyMdOnExport').checked = settings.copyMdOnExport !== false;
 }
 
 function validateSettingsFromForm() {
@@ -47,6 +55,8 @@ function validateSettingsFromForm() {
   const delaySeconds = Number(document.getElementById('delaySeconds').value);
   const maxHeight = Number(document.getElementById('maxHeight').value);
   const saveMode = document.getElementById('saveMode').value;
+  const reportFolder = document.getElementById('reportFolder').value;
+  const copyMdOnExport = document.getElementById('copyMdOnExport').checked;
   if (!filenamePattern) throw new Error('Filename pattern is required.');
   if (!Number.isFinite(delaySeconds) || delaySeconds < 0 || delaySeconds > 15) {
     throw new Error('Delay must be between 0 and 15.');
@@ -63,6 +73,8 @@ function validateSettingsFromForm() {
     delaySeconds: Math.round(delaySeconds),
     maxHeight: Math.round(maxHeight),
     saveMode,
+    reportFolder,
+    copyMdOnExport,
   };
 }
 
@@ -135,19 +147,39 @@ async function renderPresets() {
   const list = document.getElementById('preset-list');
   while (list.firstChild) list.removeChild(list.firstChild);
   const presets = await loadPresets();
+  const handy = new Set(await getHandyPresetIds(presets));
   for (const preset of presets) {
     const metaBits = [`${preset.windowWidth}${preset.windowHeight ? `×${preset.windowHeight}` : ''}`];
     if (preset.emulate) metaBits.push('emulate');
+
+    const handyInput = el('input', { type: 'checkbox' });
+    handyInput.checked = handy.has(preset.id);
+    handyInput.addEventListener('change', async () => {
+      const current = new Set(await getHandyPresetIds(await loadPresets()));
+      if (handyInput.checked) current.add(preset.id);
+      else current.delete(preset.id);
+      await setHandyPresetIds([...current]);
+      showStatus('preset-status', 'Handy list updated.');
+    });
+    const handyLabel = el('label', { className: 'handy' }, [
+      handyInput,
+      document.createTextNode('Handy'),
+    ]);
+
     const edit = el('button', { type: 'button', text: 'Edit' });
     const del = el('button', { type: 'button', text: 'Delete' });
     edit.addEventListener('click', () => openPresetDialog(preset));
     del.addEventListener('click', async () => {
-      const next = (await loadPresets()).filter((p) => p.id !== preset.id);
+      const all = await loadPresets();
+      const next = all.filter((p) => p.id !== preset.id);
       await savePresets(next);
+      const handyIds = (await getHandyPresetIds(all)).filter((id) => id !== preset.id);
+      await setHandyPresetIds(handyIds);
       await renderPresets();
     });
     list.appendChild(
       el('div', { className: 'preset-row' }, [
+        handyLabel,
         el('div', { className: 'name', text: preset.name || 'Preset' }),
         el('div', { className: 'meta', text: metaBits.join(' · ') }),
         el('div', { className: 'actions' }, [edit, del]),
@@ -188,7 +220,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('add-preset').addEventListener('click', () => openPresetDialog(null));
   document.getElementById('reset-presets').addEventListener('click', async () => {
-    await savePresets(DEFAULT_PRESETS.slice());
+    const defaults = DEFAULT_PRESETS.slice();
+    await savePresets(defaults);
+    await setHandyPresetIds(defaultHandyPresetIds(defaults));
     await chrome.storage.local.set({ lastEmulatePresetId: 'iphone-15' });
     await renderPresets();
     showStatus('preset-status', 'Presets reset to defaults.');
@@ -205,9 +239,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       const preset = readPresetForm();
       const presets = await loadPresets();
       const idx = presets.findIndex((p) => p.id === preset.id);
+      const isNew = idx < 0;
       if (idx >= 0) presets[idx] = preset;
       else presets.push(preset);
       await savePresets(presets);
+      if (isNew) {
+        const handy = new Set(await getHandyPresetIds(presets));
+        handy.add(preset.id);
+        await setHandyPresetIds([...handy]);
+      }
       document.getElementById('preset-dialog').close();
       await renderPresets();
       showStatus('preset-status', 'Preset saved.');

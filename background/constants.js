@@ -30,6 +30,12 @@ export const KNOWN_ACTIONS = new Set([
   'resize_window',
   'open_split_window',
   'start_measure',
+  'start_qa',
+  'qa_sync',
+  'qa_get',
+  'qa_export',
+  'qa_copy_md',
+  'qa_clear',
   'copy_text',
 ]);
 
