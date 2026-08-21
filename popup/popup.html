@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>WebTools</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>WebTools</h1>
+    </header>
+
+    <p id="reason" class="reason" hidden></p>
+
+    <section>
+      <h2>Capture</h2>
+      <div class="grid">
+        <button type="button" id="capture_viewport">Viewport</button>
+        <button type="button" id="capture_viewport_delayed">Delayed</button>
+        <button type="button" id="capture_fullpage">Full page</button>
+        <button type="button" id="capture_region">Region</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Frames</h2>
+      <button type="button" id="toggle_emulate" class="wide" aria-pressed="false">Emulate iPhone</button>
+      <button type="button" id="open_split_window" class="wide">Split window</button>
+      <div id="presets" class="presets" role="list"></div>
+    </section>
+
+    <section>
+      <h2>Measure</h2>
+      <button type="button" id="start_measure" class="wide">Measure</button>
+    </section>
+
+    <footer>
+      <button type="button" id="settings" class="link">Settings</button>
+    </footer>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,62 @@
+{
+  "manifest_version": 3,
+  "name": "WebTools",
+  "version": "1.0",
+  "description": "Capture, device frames, and measure for web design and development.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "activeTab",
+    "debugger",
+    "scripting",
+    "storage",
+    "downloads",
+    "windows",
+    "clipboardWrite",
+    "offscreen",
+    "contextMenus"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background/index.js",
+    "type": "module"
+  },
+  "options_page": "options/options.html",
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "WebTools",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "commands": {
+    "capture_viewport": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S",
+        "mac": "Command+Shift+S"
+      },
+      "description": "Capture viewport"
+    },
+    "capture_fullpage": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+F",
+        "mac": "Command+Shift+F"
+      },
+      "description": "Capture full page"
+    },
+    "toggle_emulate": {
+      "description": "Toggle device emulation on this tab"
+    },
+    "start_measure": {
+      "description": "Start measure overlay"
+    }
+  }
+}

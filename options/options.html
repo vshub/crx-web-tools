@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>WebTools Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>WebTools Settings</h1>
+
+      <section>
+        <h2>Save</h2>
+        <p id="save-status" class="status" hidden></p>
+        <form id="save-form">
+          <label>
+            Download folder
+            <input id="downloadFolder" type="text" autocomplete="off" />
+          </label>
+          <label>
+            Filename pattern
+            <input id="filenamePattern" type="text" autocomplete="off" />
+          </label>
+          <p class="help">Tokens: {type} {datetime} {title} {url} {domain}</p>
+          <label>
+            Delay seconds
+            <input id="delaySeconds" type="number" min="0" max="15" step="1" />
+          </label>
+          <label>
+            Max full-page height
+            <input id="maxHeight" type="number" min="500" max="20000" step="1" />
+          </label>
+          <label>
+            Save mode
+            <select id="saveMode">
+              <option value="clipboard">clipboard</option>
+              <option value="download">download</option>
+              <option value="both">both</option>
+            </select>
+          </label>
+          <button type="submit">Save</button>
+        </form>
+      </section>
+
+      <section>
+        <h2>Device presets</h2>
+        <p id="preset-status" class="status" hidden></p>
+        <div id="preset-list" class="preset-list"></div>
+        <div class="row">
+          <button type="button" id="add-preset">Add preset</button>
+          <button type="button" id="reset-presets">Reset</button>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="preset-dialog">
+      <form id="preset-form" method="dialog">
+        <h3 id="preset-dialog-title">Add preset</h3>
+        <p id="preset-error" class="status error" hidden></p>
+        <input id="preset-id" type="hidden" />
+        <label>
+          Name
+          <input id="preset-name" type="text" required />
+        </label>
+        <label>
+          Icon
+          <select id="preset-icon">
+            <option value="desktop">desktop</option>
+            <option value="laptop">laptop</option>
+            <option value="tablet">tablet</option>
+            <option value="mobile">mobile</option>
+          </select>
+        </label>
+        <label>
+          Window width
+          <input id="preset-window-width" type="number" min="200" max="8000" required />
+        </label>
+        <label>
+          Window height (optional)
+          <input id="preset-window-height" type="number" min="200" max="8000" />
+        </label>
+        <label class="check">
+          <input id="preset-emulate" type="checkbox" />
+          Emulate device
+        </label>
+        <div id="emulate-fields">
+          <label>
+            Emulate width
+            <input id="preset-emulate-width" type="number" min="1" max="8000" />
+          </label>
+          <label>
+            Emulate height
+            <input id="preset-emulate-height" type="number" min="1" max="8000" />
+          </label>
+          <label>
+            Device scale factor
+            <input id="preset-dpr" type="number" min="0.5" max="8" step="0.001" />
+          </label>
+          <label>
+            User agent
+            <textarea id="preset-ua" rows="3"></textarea>
+          </label>
+        </div>
+        <div class="row">
+          <button type="submit" value="save">Save preset</button>
+          <button type="button" id="preset-cancel">Cancel</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>
