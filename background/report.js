@@ -73,7 +73,8 @@ function pinFileName(pin) {
   return `${n}-${slug}.png`;
 }
 
-function reportFolderName(tab, settings) {
+/** Pack folder + markdown basename share the same stamp-domain-title slug. */
+export function reportPackPaths(tab, settings) {
   const root = sanitizeFolder(settings.reportFolder || 'WebTools-reports') || 'WebTools-reports';
   let domain = 'page';
   try {
@@ -82,7 +83,13 @@ function reportFolderName(tab, settings) {
     }
   } catch (_) {}
   const titleSlug = slugPart(tab.title).slice(0, 30);
-  return `${root}/${reportStamp()}-${domain}-${titleSlug}`;
+  const packName = `${reportStamp()}-${domain}-${titleSlug}`;
+  return {
+    root,
+    packName,
+    folder: `${root}/${packName}`,
+    markdownName: `${packName}.md`,
+  };
 }
 
 export function buildMarkdown({ tab, pins, viewportName, pinFiles, emulating, emulatePresetId, when }) {
@@ -189,7 +196,8 @@ export async function exportQaReport(tab) {
     return { ok: false, error: 'no pins' };
   }
   const settings = await getSettings();
-  const folder = reportFolderName(tab, settings);
+  const pack = reportPackPaths(tab, settings);
+  const folder = pack.folder;
   const enriched = await enrichTab(tab);
   const emulating = await isEmulating(tab.id);
   const st = await getState(tab.id);
@@ -225,12 +233,12 @@ export async function exportQaReport(tab) {
     emulatePresetId: st.emulatePresetId,
     when,
   });
-  await downloadNamed(markdownDataUrl(md), `${folder}/report.md`);
+  await downloadNamed(markdownDataUrl(md), `${folder}/${pack.markdownName}`);
 
   if (settings.copyMdOnExport !== false) {
     await writeClipboard({ kind: 'text', text: md });
   }
 
   flashOk(tab.id);
-  return { ok: true, folder };
+  return { ok: true, folder, markdownName: pack.markdownName };
 }

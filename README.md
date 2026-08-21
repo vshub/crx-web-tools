@@ -33,17 +33,17 @@ For staging / UAT walkthroughs without dumping raw screenshots into Slack:
 2. Click UI elements and write notes (severity: blocker / bug / nit)
 3. Use the bottom bar: **Export**, **Copy MD**, **Clear**, **Done**
 
-**Export** downloads a folder like:
+**Export** downloads a pack under Chrome’s download location (configure the path in Settings), e.g.:
 
 ```text
-WebTools-reports/2026-08-21-1430-example-checkout/
-  report.md
+Team/QA/WebTools-reports/2026-08-21-1430-example-checkout/
+  2026-08-21-1430-example-checkout.md
   viewport.png
   01-submit.png
   …
 ```
 
-Paste the Markdown into Linear / GitHub / Slack and attach the PNGs (or zip the folder).
+The markdown file uses the same stamp / domain / title slug as the pack folder. Paths are relative to Chrome’s download directory — set that to a synced team folder (or use a nested path under Downloads) so exports land where the team expects.
 
 ## Install
 
@@ -114,8 +114,8 @@ Open **Settings** from the popup footer (or right-click the extension → Option
 - **Max full-page height** — safety cap (default 12000)
 - **Save mode** — clipboard / download / both
 - **Screenshot stamp** — optional badge on capture PNGs. Toggle **Include screenshot info** in the popup; corner/fields in Settings.
-- **QA report folder** — default `WebTools-reports`
-- **Copy markdown on export** — also put `report.md` text on the clipboard
+- **QA report path** — under Chrome’s download location (default `WebTools-reports`). Nested OK, e.g. `Team/QA/WebTools-reports`
+- **Copy markdown on export** — also put the report markdown on the clipboard
 - **Handy** checkboxes — which device presets appear in the popup (defaults: 1440×900, 1920×1080)
 
 ## Limits

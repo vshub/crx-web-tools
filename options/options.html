@@ -49,9 +49,18 @@
             </select>
           </label>
           <label>
-            QA report folder
-            <input id="reportFolder" type="text" autocomplete="off" />
+            QA report path
+            <input
+              id="reportFolder"
+              type="text"
+              autocomplete="off"
+              placeholder="WebTools-reports"
+            />
           </label>
+          <p class="help section-help">
+            Relative to Chrome’s download location (not an absolute disk path). Use nested folders for a shared drop zone, e.g.
+            <code>Team/QA/WebTools-reports</code>. Point Chrome’s download folder at a synced team drive if you want files to land there automatically.
+          </p>
           <label class="check">
             <input id="copyMdOnExport" type="checkbox" />
             Copy markdown to clipboard when exporting a QA report

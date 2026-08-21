@@ -771,7 +771,7 @@ No orphan trailing separator.
 12. `chrome://extensions` as active tab: capture/emulate/measure refuse cleanly.
 13. Unknown message does not take a full-page screenshot.
 14. Kill the service worker from `chrome://serviceworker-internals` while emulate is ON; click Emulate again — it **disables**, does not enable twice.
-15. QA notes: pin two elements with notes; Export writes `report.md` + PNGs under `WebTools-reports/`; Copy MD puts markdown on the clipboard; overlay is not in the PNGs.
+15. QA notes: pin two elements with notes; Export writes `{stamp}-{domain}-{title}.md` + PNGs under the configured `reportFolder` path; Copy MD puts markdown on the clipboard; overlay is not in the PNGs.
 
 ---
 
@@ -807,17 +807,17 @@ Live-page element comments for staging/UAT UX QA. No hosted sharing — export a
 2. Hover highlights the element under the cursor; click opens a note panel (note text + severity: blocker / bug / nit).
 3. Numbered pins stay on the page. Click a badge to edit/delete. Toolbar: Export, Copy MD, Clear, Done.
 4. Esc exits the overlay but **keeps** pins in `chrome.storage.session` (`qa:${tabId}`) until Clear or tab close.
-5. **Export**: hide overlay → viewport PNG → CDP clip per pin → download folder:
+5. **Export**: hide overlay → viewport PNG → CDP clip per pin → download pack under `settings.reportFolder` (Chrome download-relative; nested paths allowed):
 
 ```text
-WebTools-reports/{stamp}-{domain}-{title}/
-  report.md
+{reportFolder}/{stamp}-{domain}-{title}/
+  {stamp}-{domain}-{title}.md
   viewport.png
   01-{label}.png
   …
 ```
 
-`report.md` uses relative image links. Setting `copyMdOnExport` (default true) also copies the markdown text.
+Markdown uses relative image links. The `.md` basename matches the pack folder slug. Setting `copyMdOnExport` (default true) also copies the markdown text.
 
 ### Rules
 
