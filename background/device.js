@@ -148,17 +148,81 @@ export async function toggleEmulate(tab, presetId) {
   return { emulating: true };
 }
 
+async function readInnerSize(tabId) {
+  try {
+    const [inj] = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => ({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      }),
+    });
+    const value = inj?.result;
+    if (
+      value &&
+      Number.isFinite(value.width) &&
+      value.width > 0 &&
+      Number.isFinite(value.height) &&
+      value.height > 0
+    ) {
+      return value;
+    }
+  } catch (_) {}
+  return null;
+}
+
+/**
+ * Resize so the page viewport (innerWidth/innerHeight) matches the target.
+ * Outer chrome.windows size includes vertical tabs / side panel / frame, so we
+ * measure the current chrome delta and compensate.
+ */
 export async function resizeWindow(width, height, windowId) {
   if (windowId == null) {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     windowId = tab?.windowId;
   }
   if (windowId == null) throw new Error('no window');
-  const update = { width: Math.round(Number(width)) };
-  if (height != null && Number.isFinite(Number(height))) {
-    update.height = Math.round(Number(height));
+
+  const targetW = Math.round(Number(width));
+  if (!Number.isFinite(targetW) || targetW < 200) throw new Error('invalid width');
+  const wantHeight = height != null && Number.isFinite(Number(height));
+  const targetH = wantHeight ? Math.round(Number(height)) : null;
+
+  const win = await chrome.windows.get(windowId);
+  const [tab] = await chrome.tabs.query({ windowId, active: true });
+  const inner = tab?.id != null ? await readInnerSize(tab.id) : null;
+
+  let outerW = targetW;
+  let outerH = targetH;
+  if (inner) {
+    const chromeW = Math.max(0, (win.width || 0) - inner.width);
+    const chromeH = Math.max(0, (win.height || 0) - inner.height);
+    outerW = targetW + chromeW;
+    if (wantHeight) outerH = targetH + chromeH;
   }
+
+  const update = { width: outerW };
+  if (wantHeight) update.height = outerH;
   await chrome.windows.update(windowId, update);
+
+  // One correction pass if vertical tabs / side panel settled differently.
+  if (tab?.id != null && inner) {
+    await new Promise((r) => setTimeout(r, 50));
+    const after = await readInnerSize(tab.id);
+    const winAfter = await chrome.windows.get(windowId);
+    if (after) {
+      const fix = {};
+      const dw = targetW - after.width;
+      if (Math.abs(dw) >= 2) fix.width = (winAfter.width || outerW) + dw;
+      if (wantHeight) {
+        const dh = targetH - after.height;
+        if (Math.abs(dh) >= 2) fix.height = (winAfter.height || outerH) + dh;
+      }
+      if (Object.keys(fix).length) {
+        await chrome.windows.update(windowId, fix);
+      }
+    }
+  }
 }
 
 export async function openSplitWindow(url, sourceWindowId) {

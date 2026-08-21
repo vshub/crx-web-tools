@@ -212,7 +212,7 @@ All runtime messages are `{ action: string, ...payload }`. Service worker handle
 | `region_coords` | overlay | `{ coords: { x, y, width, height, devicePixelRatio } }` | CDP clip PNG; coords are **CSS pixels relative to the layout viewport / document origin** (`getBoundingClientRect` + `scrollX/Y` of the **user-drawn rectangle**, not a guessed element) |
 | `overlay_canceled` | overlay | — | clear badge; no capture |
 | `toggle_emulate` | popup / command | optional `{ presetId }` | enable/disable CDP emulate on active tab |
-| `resize_window` | popup | `{ width, height }` | `chrome.windows.update`; `height` may be `null` (width only) |
+| `resize_window` | popup | `{ width, height }` | size so **page viewport** (`innerWidth` / `innerHeight`) matches; compensates for vertical tabs / side panel / window chrome. `height` may be `null` (width only) |
 | `open_split_window` | popup | `{ url, sourceWindowId }` | shrink source, open sibling with same URL |
 | `start_measure` | popup / command | — | inject overlay in `measure` mode |
 | `start_qa` | popup / command / menu | — | inject overlay in `qa` mode |
@@ -571,7 +571,7 @@ Desktop presets: `chrome.windows.update(windowId, { width, height? })` only. Do 
 
 Mobile/tablet row in the popup: **two actions** if `emulate: true`:
 
-1. **Resize window** to `windowWidth` × `windowHeight` (OS chrome means the inner viewport will be slightly smaller — acceptable).
+1. **Resize window** so the **page viewport** matches `windowWidth` × `windowHeight` (compensates for vertical tabs / side panel / frame chrome).
 2. **Emulate this tab** with that preset (the big “Emulate” toggle uses the last-used emulate preset, default `iphone-15`).
 
 Keep the popup simple:
