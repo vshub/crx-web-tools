@@ -32,8 +32,9 @@ async function hideOverlays(tabId) {
       target: { tabId },
       func: (waitMs) => {
         window.__webtoolsHideForCapture?.();
-        const host = document.querySelector('[data-webtools="overlay"]');
-        if (host) host.style.visibility = 'hidden';
+        document.querySelectorAll('[data-webtools="overlay"], [data-webtools="viewport-hud"]').forEach((node) => {
+          node.style.visibility = 'hidden';
+        });
         return new Promise((resolve) => {
           requestAnimationFrame(() => {
             requestAnimationFrame(() => setTimeout(resolve, waitMs));
@@ -53,8 +54,9 @@ async function restoreOverlays(tabId) {
       target: { tabId },
       func: () => {
         window.__webtoolsRestoreAfterCapture?.();
-        const host = document.querySelector('[data-webtools="overlay"]');
-        if (host) host.style.visibility = 'visible';
+        document.querySelectorAll('[data-webtools="overlay"], [data-webtools="viewport-hud"]').forEach((node) => {
+          node.style.visibility = 'visible';
+        });
       },
     });
   } catch (_) {}
@@ -328,6 +330,42 @@ export async function injectOverlay(tab, mode) {
       target: { tabId: tab.id },
       func: (m) => window.__webtoolsStart?.(m),
       args: [mode],
+    });
+    return { ok: true };
+  } catch (err) {
+    flashError(tab.id);
+    throw err;
+  }
+}
+
+export async function showViewportHud(tab) {
+  await guardRestricted(tab);
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ['content/viewport-hud.js'],
+    });
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => window.__webtoolsViewportHud?.show(),
+    });
+    return { ok: true };
+  } catch (err) {
+    flashError(tab.id);
+    throw err;
+  }
+}
+
+export async function toggleViewportHud(tab) {
+  await guardRestricted(tab);
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ['content/viewport-hud.js'],
+    });
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => window.__webtoolsViewportHud?.toggle(),
     });
     return { ok: true };
   } catch (err) {

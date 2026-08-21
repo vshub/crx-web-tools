@@ -16,7 +16,7 @@ Personal unpacked Chrome extension (Manifest V3). **This file is the only source
 | --- | --- |
 | Capture | Viewport, delayed viewport, full page, region select |
 | Output | Copy PNG to clipboard **and** download (setting can change this) |
-| Frames | CDP device emulate on the current tab (badge `ON`), window-size presets, split mobile window |
+| Frames | CDP device emulate on the current tab (badge `ON`), window-size presets, split mobile window, live viewport size HUD |
 | Measure | Page overlay: hover shows `w × h`; two clicks show gap in px; Esc exits |
 | QA notes | Live-page element pins with notes + severity; export Markdown report pack + screenshots |
 
@@ -116,6 +116,7 @@ WebTools/
   content/
     overlay.js
     overlay.css
+    viewport-hud.js
   popup/
     popup.html
     popup.js
@@ -212,8 +213,10 @@ All runtime messages are `{ action: string, ...payload }`. Service worker handle
 | `region_coords` | overlay | `{ coords: { x, y, width, height, devicePixelRatio } }` | CDP clip PNG; coords are **CSS pixels relative to the layout viewport / document origin** (`getBoundingClientRect` + `scrollX/Y` of the **user-drawn rectangle**, not a guessed element) |
 | `overlay_canceled` | overlay | — | clear badge; no capture |
 | `toggle_emulate` | popup / command | optional `{ presetId }` | enable/disable CDP emulate on active tab |
-| `resize_window` | popup | `{ width, height }` | size so **page viewport** (`innerWidth` / `innerHeight`) matches; compensates for vertical tabs / side panel / window chrome. `height` may be `null` (width only) |
+| `resize_window` | popup | `{ width, height }` | size so **page viewport** (`innerWidth` / `innerHeight`) matches; compensates for vertical tabs / side panel / window chrome. `height` may be `null` (width only). Shows viewport HUD after resize. |
 | `open_split_window` | popup | `{ url, sourceWindowId }` | shrink source, open sibling with same URL |
+| `show_viewport_hud` | popup | — | inject live viewport size toast (W×H, DPR, screen) |
+| `toggle_viewport_hud` | popup / command / menu | — | show/hide viewport size toast |
 | `start_measure` | popup / command | — | inject overlay in `measure` mode |
 | `start_qa` | popup / command / menu | — | inject overlay in `qa` mode |
 | `qa_get` | overlay | — | return `{ pins }` from `chrome.storage.session` key `qa:${tabId}` |

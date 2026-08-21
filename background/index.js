@@ -4,9 +4,11 @@ import {
   captureViewport,
   captureViewportDelayed,
   injectOverlay,
+  showViewportHud,
+  toggleViewportHud,
 } from './capture.js';
 import { writeClipboard } from './clipboard.js';
-import { KNOWN_ACTIONS } from './constants.js';
+import { KNOWN_ACTIONS, isRestrictedUrl } from './constants.js';
 import { openSplitWindow, resizeWindow, toggleEmulate } from './device.js';
 import {
   clearQaState,
@@ -37,6 +39,7 @@ async function ensureContextMenus() {
     chrome.contextMenus.create({ id: 'toggle_emulate', title: 'Toggle Emulate', contexts });
     chrome.contextMenus.create({ id: 'start_measure', title: 'Measure', contexts });
     chrome.contextMenus.create({ id: 'start_qa', title: 'QA notes', contexts });
+    chrome.contextMenus.create({ id: 'toggle_viewport_hud', title: 'Viewport size', contexts });
   } catch (_) {}
 }
 
@@ -103,6 +106,11 @@ export async function dispatch(msg, sender) {
       return toggleEmulate(tab, msg.presetId);
     case 'resize_window':
       await resizeWindow(msg.width, msg.height, tab.windowId);
+      if (!isRestrictedUrl(tab.url)) {
+        try {
+          await showViewportHud(tab);
+        } catch (_) {}
+      }
       return { ok: true };
     case 'open_split_window':
       await openSplitWindow(msg.url || tab.url, msg.sourceWindowId ?? tab.windowId);
@@ -111,6 +119,10 @@ export async function dispatch(msg, sender) {
       return injectOverlay(tab, 'measure');
     case 'start_qa':
       return injectOverlay(tab, 'qa');
+    case 'show_viewport_hud':
+      return showViewportHud(tab);
+    case 'toggle_viewport_hud':
+      return toggleViewportHud(tab);
     case 'qa_export':
       return exportQaReport(tab);
     case 'qa_copy_md':

@@ -31,6 +31,8 @@ export const KNOWN_ACTIONS = new Set([
   'open_split_window',
   'start_measure',
   'start_qa',
+  'show_viewport_hud',
+  'toggle_viewport_hud',
   'qa_sync',
   'qa_get',
   'qa_export',

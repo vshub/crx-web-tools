@@ -17,6 +17,7 @@ By default, shots go to **clipboard and Downloads**. Change that under Settings.
 ### Frames
 - **Emulate** — CDP device emulation on the current tab (badge shows `ON`). Reloads the page so sites can serve a mobile layout.
 - **Window presets** — resize so the **page viewport** matches the size (compensates for vertical tabs / side panel chrome)
+- **Viewport size** — live HUD showing `innerWidth × innerHeight`, DPR, and screen size (like [whatismyviewport.com](https://whatismyviewport.com/)). Appears after a preset resize; toggle anytime from the popup. Click the size to copy; × or Esc to close.
 - **Split window** — open a second window with the same URL beside the current one
 - Per-preset **Emulate** on mobile/tablet rows
 
@@ -81,7 +82,7 @@ Click the WebTools icon to open the popup.
 | Section | What to do |
 | --- | --- |
 | Capture | Viewport / Delayed / Full page / Region |
-| Frames | Emulate, Split window, or click a preset size |
+| Frames | Emulate, Split window, Viewport size HUD, or click a preset size |
 | Measure | Start measure overlay |
 | QA | Start QA notes overlay |
 | Settings | Filename pattern, folders, delay, save mode, handy presets |

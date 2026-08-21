@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     'capture_fullpage',
     'capture_region',
     'toggle_emulate',
+    'toggle_viewport_hud',
     'start_measure',
     'start_qa',
   ];
@@ -126,6 +127,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       sourceWindowId: tab?.windowId,
       tabId: tab?.id,
     });
+  });
+  document.getElementById('toggle_viewport_hud').addEventListener('click', () => {
+    send('toggle_viewport_hud', { tabId: tab?.id });
   });
   document.getElementById('start_measure').addEventListener('click', () => {
     send('start_measure', { tabId: tab?.id });

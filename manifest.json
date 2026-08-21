@@ -60,6 +60,9 @@
     },
     "start_qa": {
       "description": "Start QA notes overlay"
+    },
+    "toggle_viewport_hud": {
+      "description": "Toggle viewport size HUD"
     }
   }
 }
