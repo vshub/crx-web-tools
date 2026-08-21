@@ -3,7 +3,10 @@ import {
   captureRegion,
   captureViewport,
   captureViewportDelayed,
+  hideViewportHud,
   injectOverlay,
+  isViewportHudVisible,
+  setViewportHud,
   showViewportHud,
   toggleViewportHud,
 } from './capture.js';
@@ -121,6 +124,12 @@ export async function dispatch(msg, sender) {
       return injectOverlay(tab, 'qa');
     case 'show_viewport_hud':
       return showViewportHud(tab);
+    case 'hide_viewport_hud':
+      return hideViewportHud(tab);
+    case 'set_viewport_hud':
+      return setViewportHud(tab, Boolean(msg.enabled));
+    case 'viewport_hud_state':
+      return { ok: true, visible: await isViewportHudVisible(tab) };
     case 'toggle_viewport_hud':
       return toggleViewportHud(tab);
     case 'qa_export':

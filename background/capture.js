@@ -361,6 +361,45 @@ export async function showViewportHud(tab) {
   }
 }
 
+export async function hideViewportHud(tab) {
+  await guardRestricted(tab);
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ['content/viewport-hud.js'],
+    });
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => window.__webtoolsViewportHud?.hide(),
+    });
+    return { ok: true };
+  } catch (err) {
+    flashError(tab.id);
+    throw err;
+  }
+}
+
+export async function isViewportHudVisible(tab) {
+  if (!tab?.id || isRestrictedUrl(tab.url)) return false;
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ['content/viewport-hud.js'],
+    });
+    const [inj] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => Boolean(window.__webtoolsViewportHud?.isVisible?.()),
+    });
+    return Boolean(inj?.result);
+  } catch (_) {
+    return false;
+  }
+}
+
+export async function setViewportHud(tab, enabled) {
+  return enabled ? showViewportHud(tab) : hideViewportHud(tab);
+}
+
 export async function toggleViewportHud(tab) {
   await guardRestricted(tab);
   try {

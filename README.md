@@ -14,11 +14,11 @@ Not published to the Chrome Web Store — load it unpacked from this repo.
 
 By default, shots go to **clipboard and Downloads**. Change that under Settings.
 
-Optional **Include screenshot info** (popup checkbox, or full options in Settings) burns viewport size / host onto capture PNGs after the shot.
+Optional **Add info** (popup checkbox next to Capture; full options in Settings) burns viewport size / host onto capture PNGs after the shot.
 
 ### Frames
 - **Window presets** — resize so the **page viewport** matches width × height (compensates for vertical tabs / side panel chrome). Defaults: **1440×900** and **1920×1080**; enable more under Settings → Handy.
-- **Viewport size** — live HUD showing `innerWidth × innerHeight`, DPR, and screen size (like [whatismyviewport.com](https://whatismyviewport.com/)). Appears after a preset resize; toggle anytime from the popup. Click the size to copy; × or Esc to close.
+- **Show current** — checkbox in the popup toggles the live HUD (`innerWidth × innerHeight`, DPR, screen). Also appears after a preset resize. Click the size to copy; × or Esc to close.
 - Emulate / Split window — available in code but hidden from the popup for now
 
 ### Measure

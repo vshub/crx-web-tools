@@ -203,5 +203,5 @@
     restoreAfterCapture();
   };
 
-  window.__webtoolsViewportHud = { show, hide, toggle, update };
+  window.__webtoolsViewportHud = { show, hide, toggle, update, isVisible: () => Boolean(visible && host?.isConnected) };
 })();

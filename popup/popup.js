@@ -19,6 +19,15 @@ function send(action, extra = {}) {
   window.close();
 }
 
+function ask(action, extra = {}) {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ action, ...extra }, (result) => {
+      if (chrome.runtime.lastError) resolve(null);
+      else resolve(result);
+    });
+  });
+}
+
 function el(tag, attrs = {}, children = []) {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(attrs)) {
@@ -53,7 +62,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     'capture_fullpage',
     'capture_region',
     'toggle_emulate',
-    'toggle_viewport_hud',
     'start_measure',
     'start_qa',
   ];
@@ -67,6 +75,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     const stamp = document.getElementById('stampEnabled');
     if (stamp) stamp.disabled = true;
+    const hud = document.getElementById('showViewportHud');
+    if (hud) hud.disabled = true;
   }
 
   const settings = await getSettings();
@@ -82,6 +92,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  const hudInput = document.getElementById('showViewportHud');
+  if (hudInput && !restricted) {
+    const state = await ask('viewport_hud_state', { tabId: tab?.id });
+    hudInput.checked = Boolean(state?.visible);
+    hudInput.addEventListener('change', async () => {
+      const result = await ask('set_viewport_hud', {
+        tabId: tab?.id,
+        enabled: hudInput.checked,
+      });
+      if (!result?.ok) hudInput.checked = !hudInput.checked;
+    });
+  }
+
   const [{ windowPresets }, { handyPresetIds }] = await Promise.all([
     chrome.storage.local.get('windowPresets'),
     chrome.storage.local.get('handyPresetIds'),
@@ -92,10 +115,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     ? new Set(handyPresetIds)
     : new Set(defaultHandyPresetIds(presets));
   const visiblePresets = presets.filter((p) => handy.has(p.id));
-
-  // Deferred: emulate button state (requires #toggle_emulate in DOM)
-  // const [{ lastEmulatePresetId }, session] = await Promise.all([...]);
-  // emulateBtn.setAttribute('aria-pressed', ...);
 
   const list = document.getElementById('presets');
   for (const preset of visiblePresets) {
@@ -110,22 +129,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         tabId: tab?.id,
       });
     });
-    const row = el('div', { className: 'preset', role: 'listitem' }, [main]);
-
-    // Deferred: per-preset Emulate button
-    // if (preset.emulate) { ... }
-
-    list.appendChild(row);
+    list.appendChild(el('div', { className: 'preset', role: 'listitem' }, [main]));
   }
 
   onClick('capture_viewport', () => send('capture_viewport', { tabId: tab?.id }));
   onClick('capture_viewport_delayed', () => send('capture_viewport_delayed', { tabId: tab?.id }));
   onClick('capture_fullpage', () => send('capture_fullpage', { tabId: tab?.id }));
   onClick('capture_region', () => send('capture_region', { tabId: tab?.id }));
-  // Deferred:
-  // onClick('toggle_emulate', () => send('toggle_emulate', { tabId: tab?.id }));
-  // onClick('open_split_window', () => send('open_split_window', { ... }));
-  onClick('toggle_viewport_hud', () => send('toggle_viewport_hud', { tabId: tab?.id }));
   onClick('start_measure', () => send('start_measure', { tabId: tab?.id }));
   onClick('start_qa', () => send('start_qa', { tabId: tab?.id }));
   onClick('settings', () => {
