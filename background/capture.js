@@ -25,6 +25,7 @@ import {
   snapshotEmulation,
 } from './session.js';
 import { getSettings } from './settings.js';
+import { applyInfoStamp } from './stamp.js';
 
 async function hideOverlays(tabId) {
   try {
@@ -85,11 +86,15 @@ async function deliver(dataUrl, tab, typeStr, extension = 'png') {
     throw new Error('invalid data url');
   }
   const settings = await getSettings();
+  let out = dataUrl;
+  if (extension === 'png') {
+    out = await applyInfoStamp(dataUrl, tab, settings);
+  }
   const mode = settings.saveMode || 'both';
   let clipboardFailed = false;
 
   if (mode === 'clipboard' || mode === 'both') {
-    const result = await writeClipboard({ kind: 'image', dataUrl });
+    const result = await writeClipboard({ kind: 'image', dataUrl: out });
     if (!result?.ok) {
       clipboardFailed = true;
       if (mode === 'clipboard') {
@@ -100,7 +105,7 @@ async function deliver(dataUrl, tab, typeStr, extension = 'png') {
   }
 
   if (mode === 'download' || mode === 'both') {
-    await downloadDataUrl(dataUrl, tab, settings, typeStr, extension);
+    await downloadDataUrl(out, tab, settings, typeStr, extension);
   }
 
   flashOk(tab.id);

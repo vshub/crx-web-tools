@@ -56,6 +56,39 @@
             <input id="copyMdOnExport" type="checkbox" />
             Copy markdown to clipboard when exporting a QA report
           </label>
+
+          <h3 class="subhead">Screenshot stamp</h3>
+          <p class="help section-help">
+            Burn viewport size / host onto capture PNGs (after the shot) so Slack and reviews show the breakpoint at a glance.
+          </p>
+          <label class="check">
+            <input id="stampEnabled" type="checkbox" />
+            Stamp info on screenshots
+          </label>
+          <div id="stamp-fields">
+            <label>
+              Position
+              <select id="stampPosition">
+                <option value="tl">top left</option>
+                <option value="tr">top right</option>
+                <option value="bl">bottom left</option>
+                <option value="br">bottom right</option>
+              </select>
+            </label>
+            <label class="check">
+              <input id="stampShowSize" type="checkbox" />
+              Viewport size (e.g. 1440×900)
+            </label>
+            <label class="check">
+              <input id="stampShowHost" type="checkbox" />
+              Hostname (e.g. staging.example.com)
+            </label>
+            <label class="check">
+              <input id="stampShowPath" type="checkbox" />
+              Origin + path (no query; long paths truncated)
+            </label>
+          </div>
+
           <button type="submit">Save</button>
         </form>
       </section>

@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS } from './files.js';
+import { DEFAULT_SETTINGS, STAMP_POSITIONS } from './files.js';
 import { DEFAULT_PRESETS } from './device.js';
 import { clamp } from './constants.js';
 
@@ -46,6 +46,25 @@ export async function seedStorage() {
   }
 }
 
+function normalizeStampSettings(merged) {
+  if (typeof merged.stampEnabled !== 'boolean') {
+    merged.stampEnabled = DEFAULT_SETTINGS.stampEnabled;
+  }
+  if (!STAMP_POSITIONS.has(merged.stampPosition)) {
+    merged.stampPosition = DEFAULT_SETTINGS.stampPosition;
+  }
+  if (typeof merged.stampShowSize !== 'boolean') {
+    merged.stampShowSize = DEFAULT_SETTINGS.stampShowSize;
+  }
+  if (typeof merged.stampShowHost !== 'boolean') {
+    merged.stampShowHost = DEFAULT_SETTINGS.stampShowHost;
+  }
+  if (typeof merged.stampShowPath !== 'boolean') {
+    merged.stampShowPath = DEFAULT_SETTINGS.stampShowPath;
+  }
+  return merged;
+}
+
 export async function getSettings() {
   const { settings } = await chrome.storage.local.get('settings');
   const merged = { ...DEFAULT_SETTINGS, ...(settings && typeof settings === 'object' ? settings : {}) };
@@ -66,16 +85,19 @@ export async function getSettings() {
   if (typeof merged.copyMdOnExport !== 'boolean') {
     merged.copyMdOnExport = DEFAULT_SETTINGS.copyMdOnExport;
   }
-  return merged;
+  return normalizeStampSettings(merged);
 }
 
 export async function saveSettings(partial) {
   const current = await getSettings();
-  const next = { ...current, ...partial };
+  const next = normalizeStampSettings({ ...current, ...partial });
   next.delaySeconds = clamp(next.delaySeconds, 0, 15, DEFAULT_SETTINGS.delaySeconds);
   next.maxHeight = clamp(next.maxHeight, 500, 20000, DEFAULT_SETTINGS.maxHeight);
   if (!['clipboard', 'download', 'both'].includes(next.saveMode)) {
     throw new Error('invalid save mode');
+  }
+  if (!STAMP_POSITIONS.has(next.stampPosition)) {
+    throw new Error('invalid stamp position');
   }
   await chrome.storage.local.set({ settings: next });
   return next;

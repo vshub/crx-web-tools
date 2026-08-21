@@ -334,10 +334,17 @@ export const DEFAULT_SETTINGS = {
   delaySeconds: 3,
   maxHeight: 12000,
   saveMode: 'both', // 'clipboard' | 'download' | 'both'
+  reportFolder: 'WebTools-reports',
+  copyMdOnExport: true,
+  stampEnabled: false,
+  stampPosition: 'br', // tl | tr | bl | br
+  stampShowSize: true,
+  stampShowHost: true,
+  stampShowPath: false,
 };
 ```
 
-Tokens in `filenamePattern`: `{type}`, `{datetime}`, `{title}`, `{url}`, `{domain}` only.
+Tokens in `filenamePattern`: `{type}`, `{datetime}`, `{title}`, `{url}`, `{domain}`, `{subdomain}`.
 
 ### formatFilename(settings, tab, typeStr)
 
@@ -468,10 +475,13 @@ Then `release('capture')`, `deliver(..., 'RG', 'png')`.
 ### deliver()
 
 ```text
+if stampEnabled → applyInfoStamp (OffscreenCanvas badge: viewport size / host / path)
 if saveMode is clipboard or both → offscreen clipboard write
 if saveMode is download or both → downloadDataUrl + waitForDownload
 badge success then clear
 ```
+
+Stamp is applied **after** capture pixels are taken (never as a live DOM overlay). Size line uses page `innerWidth×innerHeight`. QA export stamps `viewport.png` the same way; pin crops are not stamped. See `background/stamp.js`.
 
 ---
 

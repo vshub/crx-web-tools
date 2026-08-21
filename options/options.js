@@ -47,6 +47,19 @@ function fillSaveForm(settings) {
   document.getElementById('saveMode').value = settings.saveMode;
   document.getElementById('reportFolder').value = settings.reportFolder || 'WebTools-reports';
   document.getElementById('copyMdOnExport').checked = settings.copyMdOnExport !== false;
+  document.getElementById('stampEnabled').checked = Boolean(settings.stampEnabled);
+  document.getElementById('stampPosition').value = settings.stampPosition || 'br';
+  document.getElementById('stampShowSize').checked = settings.stampShowSize !== false;
+  document.getElementById('stampShowHost').checked = settings.stampShowHost !== false;
+  document.getElementById('stampShowPath').checked = Boolean(settings.stampShowPath);
+  syncStampFields();
+}
+
+function syncStampFields() {
+  const on = document.getElementById('stampEnabled').checked;
+  const fields = document.getElementById('stamp-fields');
+  if (on) fields.removeAttribute('disabled');
+  else fields.setAttribute('disabled', '');
 }
 
 function validateSettingsFromForm() {
@@ -57,6 +70,11 @@ function validateSettingsFromForm() {
   const saveMode = document.getElementById('saveMode').value;
   const reportFolder = document.getElementById('reportFolder').value;
   const copyMdOnExport = document.getElementById('copyMdOnExport').checked;
+  const stampEnabled = document.getElementById('stampEnabled').checked;
+  const stampPosition = document.getElementById('stampPosition').value;
+  const stampShowSize = document.getElementById('stampShowSize').checked;
+  const stampShowHost = document.getElementById('stampShowHost').checked;
+  const stampShowPath = document.getElementById('stampShowPath').checked;
   if (!filenamePattern) throw new Error('Filename pattern is required.');
   if (!Number.isFinite(delaySeconds) || delaySeconds < 0 || delaySeconds > 15) {
     throw new Error('Delay must be between 0 and 15.');
@@ -67,6 +85,12 @@ function validateSettingsFromForm() {
   if (!['clipboard', 'download', 'both'].includes(saveMode)) {
     throw new Error('Invalid save mode.');
   }
+  if (!['tl', 'tr', 'bl', 'br'].includes(stampPosition)) {
+    throw new Error('Invalid stamp position.');
+  }
+  if (stampEnabled && !stampShowSize && !stampShowHost && !stampShowPath) {
+    throw new Error('Pick at least one stamp field, or turn stamping off.');
+  }
   return {
     downloadFolder,
     filenamePattern,
@@ -75,6 +99,11 @@ function validateSettingsFromForm() {
     saveMode,
     reportFolder,
     copyMdOnExport,
+    stampEnabled,
+    stampPosition,
+    stampShowSize,
+    stampShowHost,
+    stampShowPath,
   };
 }
 
@@ -207,6 +236,8 @@ function openPresetDialog(preset) {
 document.addEventListener('DOMContentLoaded', async () => {
   fillSaveForm(await getSettings());
   await renderPresets();
+
+  document.getElementById('stampEnabled').addEventListener('change', syncStampFields);
 
   document.getElementById('save-form').addEventListener('submit', async (ev) => {
     ev.preventDefault();

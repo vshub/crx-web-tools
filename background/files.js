@@ -8,7 +8,14 @@ export const DEFAULT_SETTINGS = {
   saveMode: 'both', // 'clipboard' | 'download' | 'both'
   reportFolder: 'WebTools-reports',
   copyMdOnExport: true,
+  stampEnabled: false,
+  stampPosition: 'br', // tl | tr | bl | br
+  stampShowSize: true,
+  stampShowHost: true,
+  stampShowPath: false,
 };
+
+export const STAMP_POSITIONS = new Set(['tl', 'tr', 'bl', 'br']);
 
 function sanitizeHostPart(value) {
   return String(value || '')

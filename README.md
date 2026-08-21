@@ -113,6 +113,7 @@ Open **Settings** from the popup footer (or right-click the extension → Option
 - **Delay seconds** — delayed capture countdown
 - **Max full-page height** — safety cap (default 12000)
 - **Save mode** — clipboard / download / both
+- **Screenshot stamp** — optional badge burned into capture PNGs (after the shot): viewport size (`1440×900`), hostname, and/or origin+path (no query). Corner + fields in Settings. Also applied to QA `viewport.png` (not pin crops).
 - **QA report folder** — default `WebTools-reports`
 - **Copy markdown on export** — also put `report.md` text on the clipboard
 - **Handy** checkboxes — which device presets appear in the popup

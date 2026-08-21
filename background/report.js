@@ -4,6 +4,7 @@ import { captureClipDataUrl, captureViewportDataUrl } from './capture.js';
 import { downloadNamed, hostFilenameParts, sanitizeFolder } from './files.js';
 import { flashError, flashOk, isEmulating, getState } from './session.js';
 import { getSettings } from './settings.js';
+import { applyInfoStamp } from './stamp.js';
 
 export function qaKey(tabId) {
   return `qa:${tabId}`;
@@ -198,7 +199,8 @@ export async function exportQaReport(tab) {
   if (typeof viewportDataUrl !== 'string' || !viewportDataUrl.startsWith('data:image/')) {
     throw new Error(viewportDataUrl?.error || 'viewport capture failed');
   }
-  await downloadNamed(viewportDataUrl, `${folder}/viewport.png`);
+  const stampedViewport = await applyInfoStamp(viewportDataUrl, tab, settings);
+  await downloadNamed(stampedViewport, `${folder}/viewport.png`);
 
   const pinFiles = [];
   for (const pin of state.pins) {

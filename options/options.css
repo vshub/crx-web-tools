@@ -37,6 +37,20 @@ h3 {
   font-size: 16px;
 }
 
+h3.subhead {
+  margin: 18px 0 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #8e8e93;
+  font-weight: 650;
+}
+
+#stamp-fields[disabled] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 section {
   background: #16162a;
   border: 1px solid #2f2f4a;
