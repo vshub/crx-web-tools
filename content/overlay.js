@@ -17,7 +17,10 @@
       pointer-events: auto;
       cursor: crosshair;
     }
-    .layer.qa { cursor: pointer; }
+    .layer.qa {
+      cursor: pointer;
+      bottom: 48px;
+    }
     .box {
       position: fixed;
       pointer-events: none;
@@ -67,38 +70,51 @@
     }
     .toolbar {
       position: fixed;
-      left: 50%;
-      bottom: 16px;
-      transform: translateX(-50%);
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 48px;
       display: none;
-      gap: 6px;
-      padding: 8px;
-      background: #1a1a2e;
-      border: 1px solid #2f2f4a;
-      border-radius: 10px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.45);
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      background: #121225;
+      border-top: 1px solid #2f2f4a;
+      box-shadow: 0 -4px 18px rgba(0,0,0,0.35);
       pointer-events: auto;
-      z-index: 3;
+      z-index: 5;
     }
     .toolbar.visible { display: flex; }
+    .toolbar .title {
+      color: #e0e0e0;
+      font: 650 12px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-right: 4px;
+      flex: none;
+    }
     .toolbar button {
       appearance: none;
       background: #2a2a4a;
       color: #e0e0e0;
       border: 1px solid #3a3a5c;
       border-radius: 6px;
-      padding: 6px 10px;
+      padding: 7px 12px;
       font: 12px/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       cursor: pointer;
     }
     .toolbar button:hover { background: #34345a; }
+    .toolbar button.primary {
+      background: #2e4a36;
+      border-color: #4caf50;
+    }
     .toolbar .count {
       color: #8e8e93;
-      font: 12px/28px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font: 12px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       padding: 0 4px;
       min-width: 3em;
-      text-align: center;
     }
+    .toolbar .spacer { flex: 1; }
     .note-panel {
       position: fixed;
       left: 50%;
@@ -237,14 +253,15 @@
 
   function placeHud(clientX, clientY) {
     const pad = 14;
+    const barReserve = mode === 'qa' ? 56 : 8;
     const w = hud.offsetWidth || 80;
     const h = hud.offsetHeight || 24;
     let x = clientX + pad;
     let y = clientY + pad;
     if (x + w > window.innerWidth - 8) x = clientX - w - pad;
-    if (y + h > window.innerHeight - 8) y = clientY - h - pad;
+    if (y + h > window.innerHeight - barReserve) y = clientY - h - pad;
     hud.style.left = `${Math.max(8, x)}px`;
-    hud.style.top = `${Math.max(8, y)}px`;
+    hud.style.top = `${Math.max(8, Math.min(y, window.innerHeight - barReserve - h))}px`;
   }
 
   function setHud(text) {
@@ -421,7 +438,10 @@
   function updateToolbarCount() {
     if (!toolbar) return;
     const count = toolbar.querySelector('.count');
-    if (count) count.textContent = String(qaPins.length);
+    if (count) {
+      const n = qaPins.length;
+      count.textContent = n === 1 ? '1 pin' : `${n} pins`;
+    }
   }
 
   function clearPinNodes() {
@@ -529,15 +549,25 @@
     saveBtn.addEventListener('click', () => saveNote());
     cancelBtn.addEventListener('click', () => closeNote(false));
     delBtn.addEventListener('click', () => deleteEditingPin());
+    const stopUi = (ev) => {
+      ev.stopPropagation();
+    };
+    for (const type of ['pointerdown', 'mousedown', 'mouseup', 'click']) {
+      notePanel.addEventListener(type, stopUi, true);
+    }
     shadow.appendChild(notePanel);
   }
 
   function buildToolbar() {
     toolbar = el('div', 'toolbar');
+    const title = el('span', 'title');
+    title.textContent = 'QA notes';
     const count = el('span', 'count');
-    count.textContent = '0';
+    count.textContent = '0 pins';
+    const spacer = el('span', 'spacer');
     const exportBtn = document.createElement('button');
     exportBtn.type = 'button';
+    exportBtn.className = 'primary';
     exportBtn.textContent = 'Export';
     const copyBtn = document.createElement('button');
     copyBtn.type = 'button';
@@ -548,20 +578,39 @@
     const doneBtn = document.createElement('button');
     doneBtn.type = 'button';
     doneBtn.textContent = 'Done';
-    toolbar.append(count, exportBtn, copyBtn, clearBtn, doneBtn);
-    exportBtn.addEventListener('click', () => {
+    toolbar.append(title, count, spacer, exportBtn, copyBtn, clearBtn, doneBtn);
+
+    // Keep page-pick listeners from ever seeing bar clicks (closed-shadow retargeting).
+    const stopUi = (ev) => {
+      ev.stopPropagation();
+    };
+    for (const type of ['pointerdown', 'mousedown', 'mouseup', 'click', 'mousemove']) {
+      toolbar.addEventListener(type, stopUi, true);
+    }
+
+    exportBtn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
       send({ action: 'qa_export' });
     });
-    copyBtn.addEventListener('click', () => {
+    copyBtn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
       send({ action: 'qa_copy_md' });
     });
-    clearBtn.addEventListener('click', async () => {
+    clearBtn.addEventListener('click', async (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
       qaPins = [];
       clearPinNodes();
       await syncPins();
       await send({ action: 'qa_clear' });
     });
-    doneBtn.addEventListener('click', () => stop(false));
+    doneBtn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      stop(false);
+    });
     shadow.appendChild(toolbar);
   }
 
@@ -680,11 +729,13 @@
 
   function bind() {
     offAll();
+    // Pointer pick runs on the content layer only — not on the docked QA bar —
+    // so Export/Copy never get treated as page-element clicks.
     const capture = true;
-    on(window, 'mousemove', onMouseMove, capture);
-    on(window, 'mousedown', onMouseDown, capture);
-    on(window, 'mouseup', onMouseUp, capture);
-    on(window, 'click', onClick, capture);
+    on(layer, 'mousemove', onMouseMove, capture);
+    on(layer, 'mousedown', onMouseDown, capture);
+    on(layer, 'mouseup', onMouseUp, capture);
+    on(layer, 'click', onClick, capture);
     on(window, 'keydown', onKeyDown, capture);
     on(window, 'scroll', onScroll, true);
     on(window, 'resize', onScroll, true);
@@ -780,9 +831,8 @@
     if (!running || noteOpen) return;
     if (mode === 'qa') {
       const path = typeof ev.composedPath === 'function' ? ev.composedPath() : [];
-      if (path.some((n) => n === toolbar || n === notePanel || (n?.classList && n.classList.contains('badge')))) {
-        return;
-      }
+      // Badge has its own handler; layer listens in capture so bail early.
+      if (path.some((n) => n?.classList?.contains?.('badge'))) return;
       ev.preventDefault();
       ev.stopPropagation();
       const hit = hitRect(ev.clientX, ev.clientY);
