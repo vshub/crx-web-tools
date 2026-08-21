@@ -1,0 +1,19 @@
+/* Keep the HUD host out of page layout (html/body flex/grid) and unstyled by the host page. */
+webtools-viewport-hud {
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  z-index: 2147483645 !important;
+  pointer-events: none !important;
+  display: block !important;
+  contain: layout style !important;
+}

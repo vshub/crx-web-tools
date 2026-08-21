@@ -117,6 +117,7 @@ WebTools/
     overlay.js
     overlay.css
     viewport-hud.js
+    viewport-hud.css
   popup/
     popup.html
     popup.js

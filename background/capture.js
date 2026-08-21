@@ -346,6 +346,10 @@ export async function injectOverlay(tab, mode) {
 export async function showViewportHud(tab) {
   await guardRestricted(tab);
   try {
+    await chrome.scripting.insertCSS({
+      target: { tabId: tab.id },
+      files: ['content/viewport-hud.css'],
+    }).catch(() => {});
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       files: ['content/viewport-hud.js'],
@@ -382,10 +386,6 @@ export async function hideViewportHud(tab) {
 export async function isViewportHudVisible(tab) {
   if (!tab?.id || isRestrictedUrl(tab.url)) return false;
   try {
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      files: ['content/viewport-hud.js'],
-    });
     const [inj] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: () => Boolean(window.__webtoolsViewportHud?.isVisible?.()),
@@ -403,6 +403,10 @@ export async function setViewportHud(tab, enabled) {
 export async function toggleViewportHud(tab) {
   await guardRestricted(tab);
   try {
+    await chrome.scripting.insertCSS({
+      target: { tabId: tab.id },
+      files: ['content/viewport-hud.css'],
+    }).catch(() => {});
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       files: ['content/viewport-hud.js'],
