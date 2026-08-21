@@ -1,5 +1,5 @@
 (() => {
-  const HUD_VERSION = 2;
+  const HUD_VERSION = 3;
   if (window.__webtoolsViewportHudVersion === HUD_VERSION) return;
   window.__webtoolsViewportHud?.hide?.();
   document.querySelectorAll('[data-webtools="viewport-hud"]').forEach((node) => node.remove());
@@ -10,15 +10,14 @@
     :host {
       all: initial;
       position: fixed !important;
-      left: 0 !important;
-      top: 0 !important;
-      width: 0 !important;
-      height: 0 !important;
-      overflow: visible !important;
-      background: transparent !important;
+      inset: 0 !important;
       z-index: 2147483645 !important;
       pointer-events: none !important;
       display: block !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      background: transparent !important;
     }
     * { box-sizing: border-box; }
     .toast {
@@ -131,7 +130,7 @@
     host = document.createElement('webtools-viewport-hud');
     host.setAttribute('data-webtools', 'viewport-hud');
     host.style.cssText =
-      'position:fixed;left:0;top:0;width:0;height:0;overflow:visible;background:transparent;z-index:2147483645;pointer-events:none;display:block;margin:0;padding:0;border:0;';
+      'position:fixed;inset:0;z-index:2147483645;pointer-events:none;display:block;margin:0;padding:0;border:0;background:transparent;';
     shadow = host.attachShadow({ mode: 'closed' });
     const style = document.createElement('style');
     style.textContent = CSS;
