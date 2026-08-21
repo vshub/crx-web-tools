@@ -219,7 +219,7 @@ async function renderPresets() {
 
 function openPresetDialog(preset) {
   const dialog = document.getElementById('preset-dialog');
-  document.getElementById('preset-dialog-title').textContent = preset ? 'Edit preset' : 'Add preset';
+  document.getElementById('preset-dialog-title').textContent = preset ? 'Edit size' : 'Add size';
   showStatus('preset-error', '');
   fillPresetForm(preset || {
     icon: 'mobile',

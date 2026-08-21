@@ -7,49 +7,70 @@
   </head>
   <body>
     <main>
-      <h1>WebTools Settings</h1>
+      <header class="page-header">
+        <h1>WebTools Settings</h1>
+        <p class="lede">Screenshots, QA exports, and viewport sizes for the popup.</p>
+      </header>
 
-      <section>
-        <h2>Save</h2>
-        <p id="save-status" class="status" hidden></p>
-        <form id="save-form">
+      <p id="save-status" class="status" hidden></p>
+
+      <form id="save-form">
+        <section>
+          <div class="section-header">
+            <h2>Screenshots</h2>
+            <p class="section-desc">Where captures go and how files are named.</p>
+          </div>
+
           <label>
             Download folder
             <input id="downloadFolder" type="text" autocomplete="off" />
           </label>
+          <p class="hint">Relative to Chrome’s download location.</p>
+
           <label>
             Filename pattern
             <input id="filenamePattern" type="text" autocomplete="off" />
           </label>
-          <div class="help vars-help">
-            <p>Available variables: {datetime}, {title}, {url}, {domain}, {subdomain}, {type}</p>
+          <details class="token-help">
+            <summary>Filename tokens</summary>
             <ul>
-              <li><code>{datetime}</code>: Current date and time</li>
-              <li><code>{title}</code>: Page title</li>
-              <li><code>{url}</code>: Full hostname (e.g., www.example.com)</li>
-              <li><code>{domain}</code>: Base domain without TLD (e.g., “example” from “www.example.com”)</li>
-              <li><code>{subdomain}</code>: Subdomains with base domain (e.g., “www_example” from “www.example.com”)</li>
-              <li><code>{type}</code>: VP viewport, DL delayed, FS full page, RG region</li>
+              <li><code>{datetime}</code> — date and time</li>
+              <li><code>{title}</code> — page title</li>
+              <li><code>{url}</code> — full hostname (e.g. www.example.com)</li>
+              <li><code>{domain}</code> — base name without TLD (e.g. example)</li>
+              <li><code>{subdomain}</code> — labels except TLD (e.g. www_example)</li>
+              <li><code>{type}</code> — VP / DL / FS / RG</li>
             </ul>
+          </details>
+
+          <div class="field-grid">
+            <label>
+              Delay (seconds)
+              <input id="delaySeconds" type="number" min="0" max="15" step="1" />
+            </label>
+            <label>
+              Max full-page height
+              <input id="maxHeight" type="number" min="500" max="20000" step="1" />
+            </label>
+            <label>
+              Save mode
+              <select id="saveMode">
+                <option value="clipboard">clipboard</option>
+                <option value="download">download</option>
+                <option value="both">both</option>
+              </select>
+            </label>
           </div>
+        </section>
+
+        <section>
+          <div class="section-header">
+            <h2>QA reports</h2>
+            <p class="section-desc">Export pack location for notes + PNGs.</p>
+          </div>
+
           <label>
-            Delay seconds
-            <input id="delaySeconds" type="number" min="0" max="15" step="1" />
-          </label>
-          <label>
-            Max full-page height
-            <input id="maxHeight" type="number" min="500" max="20000" step="1" />
-          </label>
-          <label>
-            Save mode
-            <select id="saveMode">
-              <option value="clipboard">clipboard</option>
-              <option value="download">download</option>
-              <option value="both">both</option>
-            </select>
-          </label>
-          <label>
-            QA report path
+            Report path
             <input
               id="reportFolder"
               type="text"
@@ -57,24 +78,32 @@
               placeholder="WebTools-reports"
             />
           </label>
-          <p class="help section-help">
-            Relative to Chrome’s download location (not an absolute disk path). Use nested folders for a shared drop zone, e.g.
-            <code>Team/QA/WebTools-reports</code>. Point Chrome’s download folder at a synced team drive if you want files to land there automatically.
+          <p class="hint">
+            Relative to Chrome’s download location. Nested OK, e.g.
+            <code>Team/QA/WebTools-reports</code>. Point Chrome’s downloads at a synced
+            team folder if you want packs to land there.
           </p>
+
           <label class="check">
             <input id="copyMdOnExport" type="checkbox" />
-            Copy markdown to clipboard when exporting a QA report
+            Copy markdown to clipboard on export
           </label>
+        </section>
 
-          <h3 class="subhead">Screenshot stamp</h3>
-          <p class="help section-help">
-            Burn viewport size / host onto capture PNGs (after the shot) so Slack and reviews show the breakpoint at a glance.
-          </p>
+        <section>
+          <div class="section-header">
+            <h2>Screenshot stamp</h2>
+            <p class="section-desc">
+              Burn size / host onto PNGs after capture (also toggled as “Add info” in the popup).
+            </p>
+          </div>
+
           <label class="check">
             <input id="stampEnabled" type="checkbox" />
             Stamp info on screenshots
           </label>
-          <div id="stamp-fields">
+
+          <div id="stamp-fields" class="stamp-fields">
             <label>
               Position
               <select id="stampPosition">
@@ -84,39 +113,47 @@
                 <option value="br">bottom right</option>
               </select>
             </label>
-            <label class="check">
-              <input id="stampShowSize" type="checkbox" />
-              Viewport size (e.g. 1440×900)
-            </label>
-            <label class="check">
-              <input id="stampShowHost" type="checkbox" />
-              Hostname (e.g. staging.example.com)
-            </label>
-            <label class="check">
-              <input id="stampShowPath" type="checkbox" />
-              Origin + path (no query; long paths truncated)
-            </label>
+            <div class="check-stack">
+              <label class="check">
+                <input id="stampShowSize" type="checkbox" />
+                Viewport size (e.g. 1440×900)
+              </label>
+              <label class="check">
+                <input id="stampShowHost" type="checkbox" />
+                Hostname (e.g. staging.example.com)
+              </label>
+              <label class="check">
+                <input id="stampShowPath" type="checkbox" />
+                Origin + path (no query; long paths truncated)
+              </label>
+            </div>
           </div>
+        </section>
 
-          <button type="submit">Save</button>
-        </form>
-      </section>
+        <div class="form-actions">
+          <button type="submit">Save settings</button>
+        </div>
+      </form>
 
       <section>
-        <h2>Device presets</h2>
-        <p class="help section-help">Check <strong>Handy</strong> to show a size in the popup Frames list.</p>
+        <div class="section-header">
+          <h2>Viewport sizes</h2>
+          <p class="section-desc">
+            Check <strong>Handy</strong> to show a size in the popup. Defaults are 1440×900 and 1920×1080.
+          </p>
+        </div>
         <p id="preset-status" class="status" hidden></p>
         <div id="preset-list" class="preset-list"></div>
         <div class="row">
-          <button type="button" id="add-preset">Add preset</button>
-          <button type="button" id="reset-presets">Reset</button>
+          <button type="button" id="add-preset">Add size</button>
+          <button type="button" id="reset-presets" class="ghost">Reset defaults</button>
         </div>
       </section>
     </main>
 
     <dialog id="preset-dialog">
       <form id="preset-form" method="dialog">
-        <h3 id="preset-dialog-title">Add preset</h3>
+        <h3 id="preset-dialog-title">Add size</h3>
         <p id="preset-error" class="status error" hidden></p>
         <input id="preset-id" type="hidden" />
         <label>
@@ -132,27 +169,31 @@
             <option value="mobile">mobile</option>
           </select>
         </label>
-        <label>
-          Window width
-          <input id="preset-window-width" type="number" min="200" max="8000" required />
-        </label>
-        <label>
-          Window height (optional)
-          <input id="preset-window-height" type="number" min="200" max="8000" />
-        </label>
+        <div class="field-grid two">
+          <label>
+            Width
+            <input id="preset-window-width" type="number" min="200" max="8000" required />
+          </label>
+          <label>
+            Height (optional)
+            <input id="preset-window-height" type="number" min="200" max="8000" />
+          </label>
+        </div>
         <label class="check">
           <input id="preset-emulate" type="checkbox" />
           Emulate device
         </label>
-        <div id="emulate-fields">
-          <label>
-            Emulate width
-            <input id="preset-emulate-width" type="number" min="1" max="8000" />
-          </label>
-          <label>
-            Emulate height
-            <input id="preset-emulate-height" type="number" min="1" max="8000" />
-          </label>
+        <div id="emulate-fields" class="emulate-fields">
+          <div class="field-grid two">
+            <label>
+              Emulate width
+              <input id="preset-emulate-width" type="number" min="1" max="8000" />
+            </label>
+            <label>
+              Emulate height
+              <input id="preset-emulate-height" type="number" min="1" max="8000" />
+            </label>
+          </div>
           <label>
             Device scale factor
             <input id="preset-dpr" type="number" min="0.5" max="8" step="0.001" />
@@ -162,9 +203,9 @@
             <textarea id="preset-ua" rows="3"></textarea>
           </label>
         </div>
-        <div class="row">
-          <button type="submit" value="save">Save preset</button>
-          <button type="button" id="preset-cancel">Cancel</button>
+        <div class="row dialog-actions">
+          <button type="submit" value="save">Save</button>
+          <button type="button" id="preset-cancel" class="ghost">Cancel</button>
         </div>
       </form>
     </dialog>
