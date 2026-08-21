@@ -549,11 +549,12 @@
     saveBtn.addEventListener('click', () => saveNote());
     cancelBtn.addEventListener('click', () => closeNote(false));
     delBtn.addEventListener('click', () => deleteEditingPin());
+    // Bubble phase only — capture would swallow Save/Cancel before buttons see the click.
     const stopUi = (ev) => {
       ev.stopPropagation();
     };
     for (const type of ['pointerdown', 'mousedown', 'mouseup', 'click']) {
-      notePanel.addEventListener(type, stopUi, true);
+      notePanel.addEventListener(type, stopUi, false);
     }
     shadow.appendChild(notePanel);
   }
@@ -580,12 +581,12 @@
     doneBtn.textContent = 'Done';
     toolbar.append(title, count, spacer, exportBtn, copyBtn, clearBtn, doneBtn);
 
-    // Keep page-pick listeners from ever seeing bar clicks (closed-shadow retargeting).
+    // Bubble phase only so Export/Copy handlers still receive the click.
     const stopUi = (ev) => {
       ev.stopPropagation();
     };
     for (const type of ['pointerdown', 'mousedown', 'mouseup', 'click', 'mousemove']) {
-      toolbar.addEventListener(type, stopUi, true);
+      toolbar.addEventListener(type, stopUi, false);
     }
 
     exportBtn.addEventListener('click', (ev) => {
