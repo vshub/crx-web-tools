@@ -30,6 +30,7 @@ export const KNOWN_ACTIONS = new Set([
   'resize_window',
   'open_split_window',
   'start_measure',
+  'start_inspect',
   'start_qa',
   'show_viewport_hud',
   'hide_viewport_hud',

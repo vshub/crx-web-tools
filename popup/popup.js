@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     'capture_region',
     'toggle_emulate',
     'start_measure',
+    'start_inspect',
     'start_qa',
   ];
 
@@ -137,6 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   onClick('capture_fullpage', () => send('capture_fullpage', { tabId: tab?.id }));
   onClick('capture_region', () => send('capture_region', { tabId: tab?.id }));
   onClick('start_measure', () => send('start_measure', { tabId: tab?.id }));
+  onClick('start_inspect', () => send('start_inspect', { tabId: tab?.id }));
   onClick('start_qa', () => send('start_qa', { tabId: tab?.id }));
   onClick('settings', () => {
     chrome.runtime.openOptionsPage();

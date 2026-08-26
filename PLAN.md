@@ -6,7 +6,7 @@ Personal unpacked Chrome extension (Manifest V3). **This file is the only source
 - **Audience:** one person, designing and developing for the web
 - **Not for Chrome Web Store**
 - **Stack:** vanilla ES modules, no bundler, no TypeScript, no npm
-- **Goal:** one popup for capture + device frames + measure, working on first load
+- **Goal:** one popup for capture + device frames + measure + inspect, working on first load
 
 ---
 
@@ -18,6 +18,7 @@ Personal unpacked Chrome extension (Manifest V3). **This file is the only source
 | Output | Copy PNG to clipboard **and** download (setting can change this) |
 | Frames | CDP device emulate on the current tab (badge `ON`), window-size presets, split mobile window, live viewport size HUD |
 | Measure | Page overlay: hover shows `w × h`; two clicks show gap in px; Esc exits |
+| Inspect | Page overlay: hover/click an element; copy name, selector, type, color, spacing, tokens |
 | QA notes | Live-page element pins with notes + severity; export Markdown report pack + screenshots |
 
 **Out of v1:** grid overlay, color picker, a11y outline, export page logs, click-element capture (region replaces it), video/GIF, draw-on-PNG annotation, Jira/GitHub APIs, tests suite, store packaging.
@@ -192,6 +193,9 @@ Service worker in `manifest.json`:
     },
     "start_measure": {
       "description": "Start measure overlay"
+    },
+    "start_inspect": {
+      "description": "Start inspect overlay"
     }
   }
 }
@@ -219,6 +223,7 @@ All runtime messages are `{ action: string, ...payload }`. Service worker handle
 | `show_viewport_hud` | popup | — | inject live viewport size toast (W×H, DPR, screen) |
 | `toggle_viewport_hud` | popup / command / menu | — | show/hide viewport size toast |
 | `start_measure` | popup / command | — | inject overlay in `measure` mode |
+| `start_inspect` | popup / command / menu | — | inject overlay in `inspect` mode |
 | `start_qa` | popup / command / menu | — | inject overlay in `qa` mode |
 | `qa_get` | overlay | — | return `{ pins }` from `chrome.storage.session` key `qa:${tabId}` |
 | `qa_sync` | overlay | `{ pins }` | persist pins for the tab |
@@ -636,7 +641,7 @@ await chrome.scripting.executeScript({
 await chrome.scripting.executeScript({
   target: { tabId },
   func: (mode) => window.__webtoolsStart?.(mode),
-  args: [mode], // 'measure' | 'region'
+  args: [mode], // 'measure' | 'region' | 'qa' | 'inspect'
 });
 ```
 
@@ -650,6 +655,12 @@ Guard re-entry: if overlay host exists, just switch mode.
 - First click: freeze element A (or point). Second click: element B or point. HUD: `dx`, `dy`, and Euclidean distance, all CSS px, integer.
 - `c` copies HUD text via `chrome.runtime.sendMessage({ action: 'copy_text', text })`.
 - `Escape`: `overlay_canceled`, remove overlay, restore cursor.
+
+### Inspect mode
+
+Hover highlights the element under the cursor. HUD: component-ish name (`data-component` / `data-slot` / `data-testid` / aria / distinctive class / text) and size.
+
+Click freezes the element and opens a docked panel: name, tag/role, selector, classes, size, font, colors, spacing, matching CSS custom properties. **Copy** (or `c`) writes a Slack/Linear-ready text block. `Escape` or **Done** exits. No persistence. Overlay is never photographed.
 
 ### Region mode
 
@@ -676,8 +687,9 @@ WebTools
    [ Emulate ]          (toggles; aria-pressed when ON)
    [ Split window ]
    presets list (scroll, max-height ~220px)
-── Measure
-   [ Measure ]
+── Measure / Inspect / QA
+   [ Measure ] [ Inspect ]
+   [ QA notes ]
 ── footer: Settings
 ```
 
@@ -765,6 +777,7 @@ No orphan trailing separator.
 6. Click Desktop 1440 — window width changes; debugger does not attach.
 7. Split window opens a second window with the same URL.
 8. Measure: hover a button, see its px size; two-element gap; Esc removes overlay; page clicks work again.
+8b. Inspect: hover a button, click it, Copy puts name/selector/type/color on the clipboard; Esc exits; overlay not in captures.
 9. Region drag saves a crop without the selection rectangle in the image.
 10. Clipboard paste into a doc/Figma gets the PNG when `saveMode` is `clipboard` or `both`.
 11. Filename with a weird tab title still downloads (uniquify fallback).
@@ -790,7 +803,7 @@ background/index.js
         │       ├── files.js (sanitize + download)
         │       └── clipboard.js → offscreen document
         ├── report.js (QA markdown pack)
-        └── scripting → content/overlay.js (measure | region | qa)
+        └── scripting → content/overlay.js (measure | region | qa | inspect)
 ```
 
 If emulate and capture disagree about device metrics, **emulate wins after the shot**. Capture is a guest.

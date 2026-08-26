@@ -1,5 +1,9 @@
 (() => {
-  if (window.__webtoolsOverlayInit) return;
+  const OVERLAY_VERSION = 2;
+  if (window.__webtoolsOverlayVersion === OVERLAY_VERSION) return;
+  window.__webtoolsStop?.();
+  document.querySelectorAll('[data-webtools="overlay"]').forEach((node) => node.remove());
+  window.__webtoolsOverlayVersion = OVERLAY_VERSION;
   window.__webtoolsOverlayInit = true;
 
   const SHADOW_CSS = `
@@ -20,6 +24,12 @@
     .layer.qa {
       cursor: pointer;
       bottom: 48px;
+    }
+    .layer.inspect {
+      cursor: pointer;
+    }
+    .layer.inspect.panel-open {
+      bottom: min(42vh, 280px);
     }
     .box {
       position: fixed;
@@ -188,6 +198,77 @@
       border-color: #e53935;
       margin-left: auto;
     }
+    .inspect-panel {
+      position: fixed;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      max-height: min(42vh, 280px);
+      overflow: auto;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      border: 1px solid #2f2f4a;
+      border-radius: 10px;
+      padding: 12px 12px 10px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+      pointer-events: auto;
+      z-index: 5;
+      display: none;
+      font: 13px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    .inspect-panel.visible { display: block; }
+    .inspect-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .inspect-head h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 650;
+      flex: 1;
+      min-width: 0;
+      word-break: break-word;
+    }
+    .inspect-head button {
+      appearance: none;
+      flex: none;
+      background: #2a2a4a;
+      color: #e0e0e0;
+      border: 1px solid #3a3a5c;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font: 12px/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      cursor: pointer;
+    }
+    .inspect-head button.primary {
+      background: #2e4a36;
+      border-color: #4caf50;
+    }
+    .inspect-sel {
+      color: #8e8e93;
+      font: 11px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      margin: 0 0 10px;
+      word-break: break-all;
+    }
+    .inspect-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+    .inspect-row .k {
+      flex: none;
+      width: 58px;
+      color: #8e8e93;
+    }
+    .inspect-row .v {
+      flex: 1;
+      min-width: 0;
+      font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      word-break: break-word;
+    }
   `;
 
   const SEVERITIES = ['bug', 'blocker', 'nit'];
@@ -213,6 +294,10 @@
   let editingPinId = null;
   let pendingHit = null;
   let noteOpen = false;
+  let inspectPanel = null;
+  let inspectSelected = null;
+  let inspectInfo = null;
+  let inspectUi = null;
   const listeners = [];
   const pinNodes = new Map();
 
@@ -253,7 +338,7 @@
 
   function placeHud(clientX, clientY) {
     const pad = 14;
-    const barReserve = mode === 'qa' ? 56 : 8;
+    const barReserve = mode === 'qa' ? 56 : mode === 'inspect' && inspectPanel?.classList.contains('visible') ? 200 : 8;
     const w = hud.offsetWidth || 80;
     const h = hud.offsetHeight || 24;
     let x = clientX + pad;
@@ -274,10 +359,12 @@
     host.style.pointerEvents = 'none';
     if (toolbar) toolbar.style.pointerEvents = 'none';
     if (notePanel) notePanel.style.pointerEvents = 'none';
+    if (inspectPanel) inspectPanel.style.pointerEvents = 'none';
     const node = document.elementFromPoint(clientX, clientY);
     layer.style.pointerEvents = 'auto';
     if (toolbar) toolbar.style.pointerEvents = 'auto';
     if (notePanel) notePanel.style.pointerEvents = 'auto';
+    if (inspectPanel) inspectPanel.style.pointerEvents = 'auto';
     if (!node || node === host || host.contains(node)) return null;
     return node;
   }
@@ -374,6 +461,223 @@
     return el.tagName?.toLowerCase() || 'element';
   }
 
+  function toHex(color) {
+    if (!color) return '';
+    const s = String(color).trim();
+    if (s === 'transparent' || s === 'rgba(0, 0, 0, 0)') return 'transparent';
+    const m = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/i);
+    if (!m) return s;
+    const a = m[4] === undefined ? 1 : Number(m[4]);
+    if (!Number.isFinite(a) || a <= 0) return 'transparent';
+    const hex = [m[1], m[2], m[3]].map((n) => Number(n).toString(16).padStart(2, '0')).join('');
+    if (a < 1) return `#${hex} ${Math.round(a * 100)}%`;
+    return `#${hex}`;
+  }
+
+  function roundPx(value) {
+    const n = parseFloat(value);
+    if (!Number.isFinite(n)) return String(value || '0');
+    return String(Math.round(n));
+  }
+
+  function boxSides(cs, prop) {
+    const t = roundPx(cs[`${prop}Top`]);
+    const r = roundPx(cs[`${prop}Right`]);
+    const b = roundPx(cs[`${prop}Bottom`]);
+    const l = roundPx(cs[`${prop}Left`]);
+    if (t === r && r === b && b === l) return t;
+    if (t === b && r === l) return `${t} ${r}`;
+    return `${t} ${r} ${b} ${l}`;
+  }
+
+  function inspectName(el) {
+    const component = el.getAttribute?.('data-component') || el.getAttribute?.('data-name');
+    if (component) return component.slice(0, 60);
+    const slot = el.getAttribute?.('data-slot');
+    if (slot) return slot.slice(0, 60);
+    const testid = el.getAttribute?.('data-testid');
+    if (testid) return testid.slice(0, 60);
+    const aria = el.getAttribute?.('aria-label');
+    if (aria) return aria.slice(0, 60);
+    const cls = [...(el.classList || [])].find(
+      (c) => /^(Mui|ant-|chakra-|Button|Card|Dialog|Input|Badge)/.test(c) || /[A-Z]/.test(c),
+    );
+    if (cls) return cls.slice(0, 60);
+    return shortLabel(el);
+  }
+
+  function collectTokens(el) {
+    const names = [];
+    const seen = new Set();
+    let node = el;
+    let depth = 0;
+    while (node && node.nodeType === 1 && depth < 5 && names.length < 8) {
+      let cs;
+      try {
+        cs = getComputedStyle(node);
+      } catch (_) {
+        break;
+      }
+      for (const prop of cs) {
+        if (!prop.startsWith('--')) continue;
+        if (!/(color|bg|background|font|space|spacing|size|radius|shadow|gap|pad|margin|primary|accent)/i.test(prop)) {
+          continue;
+        }
+        if (seen.has(prop)) continue;
+        const val = cs.getPropertyValue(prop).trim();
+        if (!val) continue;
+        seen.add(prop);
+        names.push(prop);
+        if (names.length >= 8) break;
+      }
+      node = node.parentElement;
+      depth += 1;
+    }
+    return names;
+  }
+
+  function extractInspect(el) {
+    const cs = getComputedStyle(el);
+    const r = el.getBoundingClientRect();
+    const classes = [...(el.classList || [])].filter((c) => c && c.length < 64).slice(0, 10);
+    const family = (cs.fontFamily || '').split(',')[0].replace(/['"]/g, '').trim();
+    const size = roundPx(cs.fontSize);
+    const lhRaw = cs.lineHeight;
+    const lh = lhRaw === 'normal' ? '' : roundPx(lhRaw);
+    const font = `${family} ${size}${lh ? `/${lh}` : ''} · ${cs.fontWeight}`;
+    const fg = toHex(cs.color);
+    const bg = toHex(cs.backgroundColor);
+    const colors = bg && bg !== 'transparent' ? `${fg} on ${bg}` : fg;
+    const spacing = `margin ${boxSides(cs, 'margin')} · padding ${boxSides(cs, 'padding')} · radius ${roundPx(cs.borderRadius)}`;
+    const tokens = collectTokens(el);
+    const role = el.getAttribute('role') || '';
+    const tag = el.tagName.toLowerCase();
+    const info = {
+      name: inspectName(el),
+      tag: role ? `${tag} [${role}]` : tag,
+      selector: cssPath(el),
+      classes: classes.join('  '),
+      width: Math.round(r.width),
+      height: Math.round(r.height),
+      font,
+      colors,
+      spacing,
+      tokens: tokens.join(', '),
+    };
+    const lines = [info.name, `${info.tag} · ${info.selector}`];
+    if (info.classes) lines.push(info.classes);
+    lines.push(`${info.width} × ${info.height}`);
+    if (info.font) lines.push(info.font);
+    if (info.colors) lines.push(info.colors);
+    if (info.spacing) lines.push(info.spacing);
+    if (info.tokens) lines.push(`tokens: ${info.tokens}`);
+    info.copy = lines.join('\n');
+    return info;
+  }
+
+  function setInspectRow(id, text) {
+    const node = inspectUi?.[id];
+    if (!node) return;
+    node.textContent = text || '—';
+  }
+
+  function closeInspect() {
+    inspectSelected = null;
+    inspectInfo = null;
+    inspectPanel?.classList.remove('visible');
+    layer?.classList.remove('panel-open');
+    applyRect(boxA, null);
+  }
+
+  function showInspect(el) {
+    if (!el || !inspectPanel || !inspectUi) return;
+    inspectSelected = el;
+    inspectInfo = extractInspect(el);
+    inspectUi.name.textContent = inspectInfo.name;
+    inspectUi.sel.textContent = `${inspectInfo.tag} · ${inspectInfo.selector}`;
+    setInspectRow('classes', inspectInfo.classes);
+    setInspectRow('size', `${inspectInfo.width} × ${inspectInfo.height}`);
+    setInspectRow('font', inspectInfo.font);
+    setInspectRow('colors', inspectInfo.colors);
+    setInspectRow('spacing', inspectInfo.spacing);
+    setInspectRow('tokens', inspectInfo.tokens);
+    inspectUi.copyBtn.textContent = 'Copy';
+    inspectPanel.classList.add('visible');
+    layer?.classList.add('panel-open');
+    const r = el.getBoundingClientRect();
+    applyRect(boxA, {
+      left: r.left,
+      top: r.top,
+      width: r.width,
+      height: r.height,
+      right: r.right,
+      bottom: r.bottom,
+    });
+  }
+
+  function copyInspect() {
+    const text = inspectInfo?.copy || '';
+    if (!text) return;
+    send({ action: 'copy_text', text });
+    if (inspectUi?.copyBtn) {
+      inspectUi.copyBtn.textContent = 'Copied';
+      setTimeout(() => {
+        if (inspectUi?.copyBtn) inspectUi.copyBtn.textContent = 'Copy';
+      }, 900);
+    }
+  }
+
+  function buildInspectPanel() {
+    inspectPanel = el('div', 'inspect-panel');
+    const head = el('div', 'inspect-head');
+    const title = el('h3');
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'primary';
+    copyBtn.textContent = 'Copy';
+    const doneBtn = document.createElement('button');
+    doneBtn.type = 'button';
+    doneBtn.textContent = 'Done';
+    head.append(title, copyBtn, doneBtn);
+    const sel = el('p', 'inspect-sel');
+    inspectPanel.append(head, sel);
+    inspectUi = { name: title, sel, copyBtn };
+    const rows = [
+      ['classes', 'Class'],
+      ['size', 'Size'],
+      ['font', 'Type'],
+      ['colors', 'Color'],
+      ['spacing', 'Space'],
+      ['tokens', 'Tokens'],
+    ];
+    for (const [id, label] of rows) {
+      const row = el('div', 'inspect-row');
+      const k = el('span', 'k');
+      k.textContent = label;
+      const v = el('span', 'v');
+      row.append(k, v);
+      inspectPanel.appendChild(row);
+      inspectUi[id] = v;
+    }
+    copyBtn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      copyInspect();
+    });
+    doneBtn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      stop(false);
+    });
+    const stopUi = (ev) => {
+      ev.stopPropagation();
+    };
+    for (const type of ['pointerdown', 'mousedown', 'mouseup', 'click', 'mousemove']) {
+      inspectPanel.addEventListener(type, stopUi, false);
+    }
+    shadow.appendChild(inspectPanel);
+  }
+
   function rectFromElement(el) {
     const r = el.getBoundingClientRect();
     return {
@@ -399,6 +703,7 @@
     applyRect(boxA, null);
     applyRect(boxB, null);
     applyRect(regionBox, null);
+    closeInspect();
     setHud('');
   }
 
@@ -726,6 +1031,7 @@
     document.documentElement.appendChild(host);
     buildToolbar();
     buildNotePanel();
+    buildInspectPanel();
   }
 
   function bind() {
@@ -746,6 +1052,20 @@
     if (mode === 'measure' && pointA) applyRect(boxA, pointA);
     if (mode === 'measure' && pointB) applyRect(boxB, pointB);
     if (mode === 'qa') renderPins();
+    if (mode === 'inspect' && inspectSelected?.isConnected) {
+      const r = inspectSelected.getBoundingClientRect();
+      applyRect(boxA, {
+        left: r.left,
+        top: r.top,
+        width: r.width,
+        height: r.height,
+        right: r.right,
+        bottom: r.bottom,
+      });
+      if (inspectUi?.size) {
+        inspectUi.size.textContent = `${Math.round(r.width)} × ${Math.round(r.height)}`;
+      }
+    }
   }
 
   function onMouseMove(ev) {
@@ -772,6 +1092,17 @@
       placeHud(ev.clientX, ev.clientY);
       return;
     }
+    if (mode === 'inspect') {
+      const rect = hitRect(ev.clientX, ev.clientY);
+      applyRect(hoverBox, rect);
+      if (rect.element) {
+        setHud(`${inspectName(rect.element)} · ${Math.round(rect.width)}×${Math.round(rect.height)}`);
+      } else {
+        setHud('Click an element');
+      }
+      placeHud(ev.clientX, ev.clientY);
+      return;
+    }
     if (mode === 'region' && dragging && regionStart) {
       const left = Math.min(regionStart.x, ev.clientX);
       const top = Math.min(regionStart.y, ev.clientY);
@@ -785,7 +1116,7 @@
 
   function onMouseDown(ev) {
     if (!running || ev.button !== 0 || noteOpen) return;
-    if (mode === 'qa') return;
+    if (mode === 'qa' || mode === 'inspect') return;
     ev.preventDefault();
     ev.stopPropagation();
     if (mode === 'region') {
@@ -841,6 +1172,14 @@
       openNoteForHit(hit);
       return;
     }
+    if (mode === 'inspect') {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const hit = hitRect(ev.clientX, ev.clientY);
+      if (!hit.element) return;
+      showInspect(hit.element);
+      return;
+    }
     if (mode !== 'measure') return;
     ev.preventDefault();
     ev.stopPropagation();
@@ -879,7 +1218,13 @@
       return;
     }
     if ((ev.key === 'c' || ev.key === 'C') && !ev.metaKey && !ev.ctrlKey && !ev.altKey) {
-      if (mode !== 'measure' || noteOpen) return;
+      if (noteOpen) return;
+      if (mode === 'inspect') {
+        ev.preventDefault();
+        copyInspect();
+        return;
+      }
+      if (mode !== 'measure') return;
       ev.preventDefault();
       const text = hud.textContent || '';
       if (!text) return;
@@ -902,14 +1247,18 @@
     offAll();
     resetTransient();
     closeNote();
+    closeInspect();
     clearPinNodes();
     if (toolbar) toolbar.classList.remove('visible');
+    if (inspectPanel) inspectPanel.classList.remove('visible');
     if (host?.isConnected) host.remove();
     host = null;
     shadow = null;
     layer = null;
     toolbar = null;
     notePanel = null;
+    inspectPanel = null;
+    inspectUi = null;
     pinLayer = null;
     if (canceled) {
       send({ action: 'overlay_canceled' });
@@ -917,12 +1266,13 @@
   }
 
   async function start(nextMode) {
-    if (nextMode !== 'measure' && nextMode !== 'region' && nextMode !== 'qa') return;
+    if (nextMode !== 'measure' && nextMode !== 'region' && nextMode !== 'qa' && nextMode !== 'inspect') return;
     if (host && host.isConnected) {
       mode = nextMode;
       resetTransient();
       running = true;
       layer.classList.toggle('qa', nextMode === 'qa');
+      layer.classList.toggle('inspect', nextMode === 'inspect');
       if (toolbar) toolbar.classList.toggle('visible', nextMode === 'qa');
       if (nextMode === 'qa') {
         const state = await send({ action: 'qa_get' });
@@ -939,6 +1289,7 @@
     running = true;
     build();
     layer.classList.toggle('qa', nextMode === 'qa');
+    layer.classList.toggle('inspect', nextMode === 'inspect');
     if (toolbar) toolbar.classList.toggle('visible', nextMode === 'qa');
     if (nextMode === 'qa') {
       const state = await send({ action: 'qa_get' });
@@ -978,6 +1329,7 @@
   }
 
   window.__webtoolsStart = start;
+  window.__webtoolsStop = () => stop(false);
   window.__webtoolsHideForCapture = hideForCapture;
   window.__webtoolsRestoreAfterCapture = restoreAfterCapture;
 })();

@@ -41,6 +41,7 @@ async function ensureContextMenus() {
     chrome.contextMenus.create({ id: 'sep_1', type: 'separator', contexts });
     chrome.contextMenus.create({ id: 'toggle_emulate', title: 'Toggle Emulate', contexts });
     chrome.contextMenus.create({ id: 'start_measure', title: 'Measure', contexts });
+    chrome.contextMenus.create({ id: 'start_inspect', title: 'Inspect', contexts });
     chrome.contextMenus.create({ id: 'start_qa', title: 'QA notes', contexts });
     chrome.contextMenus.create({ id: 'toggle_viewport_hud', title: 'Viewport size', contexts });
   } catch (_) {}
@@ -120,6 +121,8 @@ export async function dispatch(msg, sender) {
       return { ok: true };
     case 'start_measure':
       return injectOverlay(tab, 'measure');
+    case 'start_inspect':
+      return injectOverlay(tab, 'inspect');
     case 'start_qa':
       return injectOverlay(tab, 'qa');
     case 'show_viewport_hud':

@@ -89,6 +89,10 @@ section h2 {
   gap: 5px;
 }
 
+.grid > button:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
 button {
   appearance: none;
   background: #16162a;

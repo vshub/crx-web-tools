@@ -1,6 +1,6 @@
 # WebTools
 
-Personal Chrome extension for web design and UX QA: screenshots, device frames, measure tools, and annotated bug notes you can export as Markdown.
+Personal Chrome extension for web design and UX QA: screenshots, device frames, inspect, measure, and annotated bug notes you can export as Markdown.
 
 Not published to the Chrome Web Store — load it unpacked from this repo.
 
@@ -25,6 +25,16 @@ Optional **Add info** (popup checkbox next to Capture; full options in Settings)
 - Hover any element to see `width × height`
 - Click two elements (or points) to see gap / distance
 - Press `c` to copy the readout; `Esc` to exit
+
+### Inspect
+Point at a control and copy a spec for design / frontend:
+
+1. Click **Inspect**
+2. Hover to see name + size; click to freeze
+3. **Copy** (or `c`) puts a text block on the clipboard: name, selector, classes, type, color, spacing, tokens
+4. `Esc` or **Done** to exit
+
+Names come from the DOM (`data-component`, `data-slot`, `data-testid`, aria, or a distinctive class) — not from a design-system registry.
 
 ### QA notes
 For staging / UAT walkthroughs without dumping raw screenshots into Slack:
@@ -84,10 +94,11 @@ Click the WebTools icon to open the popup.
 | Capture | Viewport / Delayed / Full page / Region |
 | Frames | Emulate, Split window, Viewport size HUD, or click a preset size |
 | Measure | Start measure overlay |
+| Inspect | Start inspect overlay |
 | QA | Start QA notes overlay |
 | Settings | Filename pattern, folders, delay, save mode, handy presets |
 
-Right-click the extension icon for Capture Viewport, Full Page, Toggle Emulate, Measure, and QA notes.
+Right-click the extension icon for Capture Viewport, Full Page, Toggle Emulate, Measure, Inspect, and QA notes.
 
 ### Keyboard shortcuts
 
@@ -99,6 +110,7 @@ Defaults (change at `chrome://extensions/shortcuts`):
 | Capture full page | ⌘⇧F | Ctrl+Shift+F |
 | Toggle emulate | (unset) | (unset) |
 | Measure | (unset) | (unset) |
+| Inspect | (unset) | (unset) |
 | QA notes | (unset) | (unset) |
 
 ## Settings

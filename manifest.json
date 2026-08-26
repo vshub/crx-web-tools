@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "WebTools",
-  "version": "1.1.0",
-  "description": "Capture, device frames, and measure for web design and development.",
+  "version": "1.2.0",
+  "description": "Capture, viewport frames, inspect, measure, and QA notes for web design.",
   "minimum_chrome_version": "116",
   "permissions": [
     "activeTab",
@@ -57,6 +57,9 @@
     },
     "start_measure": {
       "description": "Start measure overlay"
+    },
+    "start_inspect": {
+      "description": "Start inspect overlay"
     },
     "start_qa": {
       "description": "Start QA notes overlay"
